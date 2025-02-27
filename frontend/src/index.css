@@ -8,30 +8,53 @@ html {
 
 body,
 #root {
-  margin: auto;
+  @apply mx-auto;
   width: 93vw;
-  height: 100vh;
 }
 
 p,
 a,
 label {
-  font-size: 1rem;
+  @apply text-base;
+}
+
+input,
+textarea {
+  @apply font-semibold px-2 py-1 bg-gray-200 border-b border-solid border-gray-500;
+}
+
+table {
+  @apply w-full mt-3 ;
+  -ms-writing-mode : tb-lr;
+  writing-mode : vertical-lr;
+}
+th {
+  @apply px-3 py-2 text-start text-gray-600 border border-solid border-gray-500;
+  -ms-writing-mode : lr-tb;
+  writing-mode : horizontal-tb;
+}
+td {
+  @apply px-3 py-2 border border-solid border-gray-500;
+  -ms-writing-mode : lr-tb;
+  writing-mode : horizontal-tb;
 }
 
 @layer components {
   .haru-btn {
-    @apply text-base px-2 py-1 mt-2 mb-2 mr-2 rounded-md bg-green-400;
+    @apply text-base px-2 py-1 mt-2 mb-2 mr-2 rounded-md;
   }
   .haru-todo-list-block {
     @apply py-3 px-2 mt-3 mx-auto rounded-md border border-solid bg-blue-300;
   }
   .haru-todo-list {
-    @apply haru-todo-list-block flex items-center border border-solid;
+    @apply haru-todo-list-block border border-solid;
   }
 }
 
 @layer utilities {
+  .haru-btn-color {
+    @apply bg-green-400;
+  }
   .haru-todo-list-font {
     @apply text-lg font-bold;
   }
