@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- 全体 --- */
+
+html {
+  background: #a7d6ff;
+}
+
+body,
+#root {
+  @apply mx-auto;
+  width: 93vw;
+}
+
+p,
+a,
+label {
+  @apply text-base;
+}
+
+.haru-input {
+  @apply font-semibold px-2 py-1 w-full bg-gray-200;
+}
+
+input {
+  @apply block haru-input;
+}
+
+textarea {
+  @apply haru-input block resize-none;
+}
+
+table {
+  @apply w-full;
+  -ms-writing-mode : tb-lr;
+  writing-mode : vertical-lr;
+}
+th {
+  @apply px-3 py-2 text-start text-gray-600 border-b border-solid border-gray-500;
+  -ms-writing-mode : lr-tb;
+  writing-mode : horizontal-tb;
+}
+td {
+  @apply px-3 py-2 border-b border-solid border-gray-500;
+  -ms-writing-mode : lr-tb;
+  writing-mode : horizontal-tb;
+}
+
+option {
+  @apply font-semibold;
+}
+
+/* --- top画面 --- */
+
+@layer components {
+  .haru-btn {
+    @apply block text-base px-2 py-1 mt-2 mb-2 mr-2 rounded-md;
+  }
+  .haru-code-btn {
+    @apply block px-1 mt-1 ml-auto rounded-md;
+  }
+  .haru-todo-list-block {
+    @apply py-3 px-2 mt-3 mx-auto rounded-md border border-solid bg-blue-300;
+  }
+  .haru-todo-list {
+    @apply haru-todo-list-block border border-solid;
+  }
+}
+
+@layer utilities {
+  .haru-btn-color {
+    @apply bg-green-400;
+  }
+  .haru-code-btn {
+    @apply bg-orange-300;
+  }
+  .haru-todo-list-font {
+    @apply text-lg font-bold;
+  }
+
+  .haru-todo-list-block-color {
+    @apply border-gray-700;
+  }
+
+  .haru-todo-list-blue-color {
+    @apply border-blue-900;
+  }
+
+  .haru-todo-list-date {
+    @apply flex text-sm text-gray-600;
+  }
+}
+
+/* --- todo-add --- */
+.haru-underline {
+  @apply border-b border-solid border-gray-600;
+}
