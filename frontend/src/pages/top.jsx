@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TodoFormat } from "../components/todo-format";
 import { TodoListFormat } from "../components/todo-list-format";
 import { TodoAdd } from "../components/todo-add";
+import { TodoAddHooks } from "../hooks/todo-list-hooks";
 
 export const Top = () => {
-
-  const [ todoAddCheck, setTodoAddCheck ] = useState(false);
-  const [ todoAddValue, setTodoAddValue ] = useState("追加");
+  const { showTodo } = TodoAddHooks();
+  const [todoAddCheck, setTodoAddCheck] = useState(false);
+  const [todoAddValue, setTodoAddValue] = useState("追加");
+  const [dbTodoList, setDbTodoList] = useState([]);
+  
+  useEffect(() => {
+    showTodo().then((res) => setDbTodoList(res.data));
+  }, []);
   
   const showTodoAdd = () => {
     setTodoAddCheck(!todoAddCheck);
@@ -27,8 +33,12 @@ export const Top = () => {
           </button>
         </div>
         {todoAddCheck && <TodoAdd />}
-        <TodoListFormat />
-        <TodoFormat />
+        {dbTodoList.map((todo) =>
+          // console.log(todo)
+          <TodoFormat todo={todo} />
+        )}
+        {/* <TodoListFormat />
+        <TodoFormat /> */}
       </div>
     </>
   );

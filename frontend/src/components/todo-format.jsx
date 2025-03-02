@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TodoAdd } from "./todo-add";
 
-export const TodoFormat = () => {
-  const [ todoInfoCheck, setTodoInfoCheck ] = useState(false);
-  const [ todoInfoAllow, setTodoInfoAllow ] = useState("＞");
+export const TodoFormat = ({todo}) => {
+  console.log(todo);
+  const [todoInfoCheck, setTodoInfoCheck] = useState(false);
+  const [todoInfoAllow, setTodoInfoAllow] = useState("＞");
 
   const changeCheckBox = () => {};
 
@@ -23,14 +24,12 @@ export const TodoFormat = () => {
             showTodoInfo();
           }}
         >
-          画面を作る
-          <span className="haru-todo-list-date">2024-02-22 12:00</span>
+          {todo.title}
+          <span className="haru-todo-list-date">{todo.start_date} ～ {todo.end_date}</span>
         </label>
         <p className="ml-auto"> {todoInfoAllow}</p>
       </div>
-      {todoInfoCheck && (
-        <TodoAdd />
-      )}
+      {todoInfoCheck && <TodoAdd add={todo} />}
     </div>
   );
 };

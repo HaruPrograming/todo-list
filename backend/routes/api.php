@@ -8,4 +8,5 @@ use App\Http\Controllers\TodoListController;
 
 
 Route::get('users', [UserController::class, 'index']);
-Route::post('todoAdd', [TodoListController::class, 'index']);
+Route::get('showTodo', [TodoListController::class, 'showTodo']);
+Route::post('addTodo', [TodoListController::class, 'addTodo']);

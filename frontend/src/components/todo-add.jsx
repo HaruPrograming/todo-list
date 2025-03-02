@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import {TodoAddHooks} from "../hooks/todo-add-hooks";
+import {TodoAddHooks} from "../hooks/todo-list-hooks";
 
-export const TodoAdd = () => {
+export const TodoAdd = ({add}) => {
   const [titleValue, setTitleValue] = useState("課題を終わらす");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -12,11 +12,13 @@ export const TodoAdd = () => {
   const [codeValue, setCodeValue] = useState("<h1>hello</h1>");
   const [codeAdd, setCodeAdd] = useState(false);
   const [groupAdd, setGroupAdd] = useState(false);
-  const {todoAdd} = TodoAddHooks();
+  const { addTodo } = TodoAddHooks();
   const commentRef = useRef("");
-  const commentNewLine = useRef(0);
+  const codeRef = useRef("");
   const commentTextRows = useRef(1);
   const codeTextRows = useRef(1);
+  const commentNewLine = useRef(0);
+  const codeNewLine = useRef(0);
   const nowDate = new Date();
   
   useEffect(() => {
@@ -25,6 +27,15 @@ export const TodoAdd = () => {
       setEndDate(formatToDatetimeLocal(nowDate, 1, 1));
     } else {
       setEndDate(formatToDatetimeLocal(nowDate, 0, 1));
+    }
+    if (add) {
+      setTitleValue(add.title);
+      setStartDate(add.start_date);
+      setEndDate(add.end_date);
+      setGroupSelected(add.group);
+      setPriorityValue(add.priority);
+      setCommentValue(add.comment);
+      setCodeValue(add.code);
     }
   }, []);
   
@@ -46,25 +57,56 @@ export const TodoAdd = () => {
 
   const commentChange = (event) => {
     setCommentValue(event.target.value);
-    commentTextRows.current = textRows(event.target.value);
+    commentTextRows.current = textRows(commentRef, commentNewLine, event.target.value);
   };
 
   const codeChange = (event) => {
     setCodeValue(event.target.value);
-    codeTextRows.current = textRows(event.target.value);
+    codeTextRows.current = textRows(codeRef, codeNewLine, event.target.value);
   };
 
-  const textRows = (comment) => {
-    if (commentRef.current) {
-      commentNewLine.current = comment.match(/\r\n|\n/g)
-        ? comment.match(/\r\n|\n/g).length
-        : 0;
-      return (
-        Math.ceil(
-          Math.round(comment.length) /
-            Math.round(commentRef.current.clientWidth / 16)
-        ) + commentNewLine.current
-      );
+  const valueLineRef = useRef(0);
+  const valueSliceRef = useRef("");
+  const textRows = (valueRef, valueNewLine, value) => {
+    if (valueRef.current) {
+      // valueNewLine.current = 1;
+      valueNewLine.current = value.match(/\r\n|\n/g)
+        ? value.match(/\r\n|\n/g).length
+        : 1;
+      console.log(valueNewLine.current);
+      // if ()
+      valueSliceRef.current = value;
+      // console.log(valueSliceRef.current);
+      // console.log(valueSliceRef.current.indexOf("\n"));
+      if (valueSliceRef.current.indexOf("\n") > -1) {
+        while (valueSliceRef.current.indexOf("\n") > -1) {
+          // if (valueSliceRef.current.indexOf("\n") > 1) {
+          // };
+          // console.log(valueSliceRef.current);
+          // console.log(valueNewLine.current);
+          valueLineRef.current = valueSliceRef.current.indexOf("\n");
+          valueSliceRef.current = valueSliceRef.current.substring(
+            valueLineRef.current + 1,
+            valueSliceRef.current.length
+          );
+          // console.log(valueLineRef.current);
+          // console.log(
+          //   valueLineRef.current,
+          //   valueSliceRef.current.length,
+          //   valueSliceRef.current
+          // );
+        }
+        valueNewLine.current++;
+      }
+      // if (valueSliceRef.current.indexOf("\n") == 0) {valueLineRef.current = 0;}
+        // console.log(value.indexOf("\n"));
+        // console.log(valueRef.current, valueNewLine.current, value);
+        return (
+          Math.ceil(
+            Math.round(valueSliceRef.current.length) /
+              Math.round(valueRef.current.clientWidth / 16)
+          ) + valueNewLine.current
+        );
     } else {
       return 1;
     }
@@ -111,7 +153,7 @@ export const TodoAdd = () => {
       endDate: endDate,
       priority: priorityValue,
       groupSelected: groupSelected,
-      groupValue: groupValue,
+      // groupValue: groupValue,
       comment: commentValue,
       code: codeValue,
     })
@@ -120,12 +162,11 @@ export const TodoAdd = () => {
       start_date: startDate,
       end_date: endDate,
       priority: priorityValue,
-      // groupSelected: groupSelected,
-      group: groupValue,
+      group: groupSelected,
       comment: commentValue,
       code: codeValue,
     };
-    todoAdd(todoData);
+    addTodo(todoData);
   };
 
   return (
@@ -192,7 +233,7 @@ export const TodoAdd = () => {
                   }
                   onChange={(event) => groupSelect(event)}
                 >
-                  <option value="">なし</option>
+                  <option value="なし">なし</option>
                   <option value="追加">追加</option>
                   <option value="Todoリスト">Todoリスト</option>
                 </select>
@@ -201,7 +242,7 @@ export const TodoAdd = () => {
                     <input
                       type="text"
                       className="haru-underline mb-2 w-9/12"
-                      onChange={(event) => setGroupValue(event.target.value)}
+                      onChange={(event) => setGroupSelected(event.target.value)}
                     />
                     {/* <button className="haru-btn my-auto mr-0 ml-auto bg-blue-200">
                       保存
@@ -219,7 +260,7 @@ export const TodoAdd = () => {
                 <textarea
                   name=""
                   id=""
-                  // ref={commentRef}
+                  ref={commentRef}
                   rows={commentTextRows.current}
                   className={codeAdd ? "mt-2 haru-underline" : "mt-2"}
                   onChange={commentChange}
@@ -230,8 +271,9 @@ export const TodoAdd = () => {
                   <textarea
                     name=""
                     id=""
-                    // ref={codeRef}
+                    ref={codeRef}
                     rows={codeTextRows.current}
+                    wrap="off"
                     className="mt-2"
                     onChange={codeChange}
                     value={codeValue || ""}
