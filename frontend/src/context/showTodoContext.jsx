@@ -1,31 +1,28 @@
-// import { useState } from "react";
-
-// export const ShowTodoContext = () => {
-//   const [todoAddCheck, setTodoAddCheck] = useState(false);
-
-//   return {todoAddCheck, setTodoAddCheck};
-// }
-
 import { createContext, useContext, useState } from "react";
 
-export const ShowTodoContext = createContext("");
-export const useAdminAddCategoryData = () => {
-  return useContext(ShowTodoContext);
+export const showTodoContext = createContext("");
+export const useShowTodoContext = () => {
+  return useContext(showTodoContext);
 };
 
-const AdminAddCategoryDataProvider = ({ children }) => {
-  const [AdminAddCategoryData, setAdminAddCategoryData] = useState("");
+export const ShowTodoContextProvider = ({ children }) => {
+  const [todoAddCheck, setTodoAddCheck] = useState(false);
+  const [todoInfoCheck, setTodoInfoCheck] = useState(-1);
+  const [todoListInfoCheck, setTodoListInfoCheck] = useState(-1);
 
   const contextValue = {
-    AdminAddCategoryData,
-    setAdminAddCategoryData,
+    todoAddCheck,
+    setTodoAddCheck,
+    todoInfoCheck,
+    setTodoInfoCheck,
+    todoListInfoCheck,
+    setTodoListInfoCheck,
   };
 
   return (
-    <ShowTodoContext.Provider value={contextValue}>
+    <showTodoContext.Provider value={contextValue}>
       {children}
-    </ShowTodoContext.Provider>
+    </showTodoContext.Provider>
   );
 };
 
-export default AdminAddCategoryDataProvider;

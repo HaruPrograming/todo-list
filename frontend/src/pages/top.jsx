@@ -1,22 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { useShowTodoContext } from '../context/showTodoContext';
+import { usegetTodoContext } from '../context/getTodoContext';
+import { usetodoDataContext } from '../context/todoDataContext';
+import { TodoListFormat } from '../components/todo-list-format';
 import { TodoFormat } from "../components/todo-format";
-import { TodoListFormat } from "../components/todo-list-format";
 import { TodoAdd } from "../components/todo-add";
-import { TodoAddHooks } from "../hooks/todo-list-hooks";
+import { TodoHooks } from "../hooks/todo-list-hooks";
 
 export const Top = () => {
-  const { showTodo } = TodoAddHooks();
-  const [todoAddCheck, setTodoAddCheck] = useState(false);
+  const { showTodo, showTodoGroup } = TodoHooks();
+  const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
+  const { getTodoCheck } = usegetTodoContext();
+  const { dbTodoList, setDbTodoList, groupList, setGroupList } = usetodoDataContext();
   const [todoAddValue, setTodoAddValue] = useState("追加");
-  const [dbTodoList, setDbTodoList] = useState([]);
   
   useEffect(() => {
-    showTodo().then((res) => setDbTodoList(res.data));
-  }, []);
+    setTodoAddValue(!todoAddCheck ? "追加" : "閉じる");
+    showTodo().then((res) => {
+      setDbTodoList(res.data);
+    });
+    showTodoGroup().then((res) => {
+      setGroupList(res.data);
+    });
+  }, [getTodoCheck]);
   
   const showTodoAdd = () => {
-    setTodoAddCheck(!todoAddCheck);
     setTodoAddValue(todoAddCheck ? "追加" : "閉じる");
+    setTodoAddCheck(!todoAddCheck);
   };
   
   return (
@@ -32,10 +42,17 @@ export const Top = () => {
             {todoAddValue}
           </button>
         </div>
+        {dbTodoList == "" && !todoAddCheck && (
+          <h1 className="text-center font-semibold">
+            Todoリストがありません。
+          </h1>
+        )}
         {todoAddCheck && <TodoAdd />}
-        {dbTodoList.map((todo) =>
-          // console.log(todo)
-          <TodoFormat todo={todo} />
+        {groupList && groupList.map((group) => 
+          <TodoListFormat key={group.id} group={group} />
+        )}
+        {dbTodoList.map((todo) => 
+          !todo.group_id && <TodoFormat key={todo.id} todo={todo} />
         )}
         {/* <TodoListFormat />
         <TodoFormat /> */}

@@ -94,6 +94,21 @@ option {
 }
 
 /* --- todo-add --- */
-.haru-underline {
-  @apply border-b border-solid border-gray-600;
+
+@layer components {
+  .haru-underline {
+    @apply border-b border-solid border-gray-600;
+  }
+}
+
+@layer utilities {
+  .haru-save-btn-color {
+    @apply bg-blue-400;
+  }
+  .haru-delete-btn-color {
+    @apply bg-red-400;
+  }
+  .haru-todo-error-color {
+    @apply border-2 border-solid border-red-500;
+  }
 }

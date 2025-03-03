@@ -1,18 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
-import {TodoAddHooks} from "../hooks/todo-list-hooks";
+import { TodoHooks } from "../hooks/todo-list-hooks";
+import { usetodoDataContext } from "../context/todoDataContext";
 
-export const TodoAdd = ({add}) => {
-  const [titleValue, setTitleValue] = useState("課題を終わらす");
+export const TodoAdd = ({ add }) => {
+  const { showTodoGroup, addTodo, deleteTodo, addTodoGroup, editTodo } =
+    TodoHooks();
+  const { groupList, setGroupList } = usetodoDataContext();
+  const [idValue, setIdValue] = useState("");
+  const [titleValue, setTitleValue] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [groupSelected, setGroupSelected] = useState("なし");
-  const [groupValue, setGroupValue] = useState("");
-  const [priorityValue, setPriorityValue] = useState("高");
-  const [commentValue, setCommentValue] = useState("課題終わらす");
-  const [codeValue, setCodeValue] = useState("<h1>hello</h1>");
+  const [groupSelected, setGroupSelected] = useState("");
+  const [groupValue, setGroupValue] = useState(null);
+  const [priorityValue, setPriorityValue] = useState("");
+  const [commentValue, setCommentValue] = useState("");
+  const [codeValue, setCodeValue] = useState(null);
   const [codeAdd, setCodeAdd] = useState(false);
   const [groupAdd, setGroupAdd] = useState(false);
-  const { addTodo } = TodoAddHooks();
+  const [error, setError] = useState("");
   const commentRef = useRef("");
   const codeRef = useRef("");
   const commentTextRows = useRef(1);
@@ -28,11 +33,15 @@ export const TodoAdd = ({add}) => {
     } else {
       setEndDate(formatToDatetimeLocal(nowDate, 0, 1));
     }
+    // showTodoGroup().then((res) =>{
+    //   setGroupList(res.data);
+    // });
     if (add) {
+      setIdValue(add.id);
       setTitleValue(add.title);
       setStartDate(add.start_date);
       setEndDate(add.end_date);
-      setGroupSelected(add.group);
+      setGroupSelected(add.group_id);
       setPriorityValue(add.priority);
       setCommentValue(add.comment);
       setCodeValue(add.code);
@@ -48,7 +57,7 @@ export const TodoAdd = ({add}) => {
     ? "00"
     : String(date.getHours() + addHour).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
   const showcodeAdd = () => {
@@ -69,50 +78,47 @@ export const TodoAdd = ({add}) => {
   const valueSliceRef = useRef("");
   const textRows = (valueRef, valueNewLine, value) => {
     if (valueRef.current) {
-      // valueNewLine.current = 1;
       valueNewLine.current = value.match(/\r\n|\n/g)
         ? value.match(/\r\n|\n/g).length
         : 1;
-      console.log(valueNewLine.current);
-      // if ()
       valueSliceRef.current = value;
-      // console.log(valueSliceRef.current);
-      // console.log(valueSliceRef.current.indexOf("\n"));
       if (valueSliceRef.current.indexOf("\n") > -1) {
         while (valueSliceRef.current.indexOf("\n") > -1) {
-          // if (valueSliceRef.current.indexOf("\n") > 1) {
-          // };
-          // console.log(valueSliceRef.current);
-          // console.log(valueNewLine.current);
           valueLineRef.current = valueSliceRef.current.indexOf("\n");
           valueSliceRef.current = valueSliceRef.current.substring(
             valueLineRef.current + 1,
             valueSliceRef.current.length
           );
-          // console.log(valueLineRef.current);
-          // console.log(
-          //   valueLineRef.current,
-          //   valueSliceRef.current.length,
-          //   valueSliceRef.current
-          // );
         }
         valueNewLine.current++;
       }
-      // if (valueSliceRef.current.indexOf("\n") == 0) {valueLineRef.current = 0;}
-        // console.log(value.indexOf("\n"));
-        // console.log(valueRef.current, valueNewLine.current, value);
-        return (
-          Math.ceil(
-            Math.round(valueSliceRef.current.length) /
-              Math.round(valueRef.current.clientWidth / 16)
-          ) + valueNewLine.current
-        );
+      return (
+        Math.ceil(
+          Math.round(valueSliceRef.current.length) /
+            Math.round(valueRef.current.clientWidth / 16)
+        ) + valueNewLine.current
+      );
     } else {
       return 1;
     }
   };
 
   const nowDateFormat = new Date(formatToDatetimeLocal(nowDate));
+  
+  const startDateChange = (event) => {
+    const inputDate = new Date(event.target.value);
+    if (nowDateFormat < inputDate) {
+      setStartDate(formatToDatetimeLocal(event.target.value));
+      endDateSet(inputDate);
+    }
+  };
+  
+  const endDateChange = (event) => {
+    const inputDate = new Date(event.target.value);
+    if (new Date(startDate) < inputDate && nowDateFormat < inputDate) {
+      endDateSet(inputDate);
+    }
+  };
 
   const endDateSet = (inputDate) => {
     if (inputDate.getHours() == 23) {
@@ -122,51 +128,58 @@ export const TodoAdd = ({add}) => {
     }
   };
 
-  const startDateChange = (event) => {
-    const inputDate = new Date(event.target.value);
-    if (nowDateFormat < inputDate) {
-      setStartDate(event.target.value);
-      endDateSet(inputDate);
-    }
-  };
-    
-  const endDateChange = (event) => {
-    const inputDate = new Date(event.target.value);
-    if (new Date(startDate) < inputDate && nowDateFormat < inputDate) {
-      endDateSet(inputDate);
-    }
-  };
-
   const groupSelect = (event) => {
-    setGroupSelected(event.target.value);
-    if (event.target.value === "追加") {
+    if (event.target.value === "1") {
+      setGroupSelected(null);
+    } else {
+      setGroupSelected(event.target.value);
+    }
+
+    if (event.target.value === "2") {
       setGroupAdd(true);
     } else {
       setGroupAdd(false);
     }
   };
 
-  const saveTodo = () => {
-    console.log({
-      title: titleValue,
-      startDate: startDate,
-      endDate: endDate,
-      priority: priorityValue,
-      groupSelected: groupSelected,
-      // groupValue: groupValue,
-      comment: commentValue,
-      code: codeValue,
-    })
+  const addGroupTodo = (saveSelect) => {
+    // console.log({
+    //   title: titleValue,
+    //   start_date: startDate,
+    //   end_date: endDate,
+    //   priority: priorityValue,
+    //   group_id: groupSelected,
+    //   comment: commentValue,
+    //   code: codeValue,
+    // });
     const todoData = {
       title: titleValue,
       start_date: startDate,
       end_date: endDate,
       priority: priorityValue,
-      group: groupSelected,
+      group_id: groupSelected,
       comment: commentValue,
       code: codeValue,
     };
-    addTodo(todoData);
+    if (idValue) {
+      todoData.id = idValue;
+    }
+    if (groupValue) {
+      addTodoGroup(groupValue).then((res) => {
+        todoData.group_id = res;
+        saveSelect(todoData);
+      });
+    } else {
+      saveSelect(todoData);
+    }
+  };
+
+  const saveTodo = () => {
+    if (idValue) {
+      addGroupTodo(editTodo);
+    } else {
+      addGroupTodo(addTodo);
+    }
   };
 
   return (
@@ -180,7 +193,14 @@ export const TodoAdd = ({add}) => {
               <th>重要度</th>
               <th>グループ</th>
               <th>内容</th>
-              <th className="border-r-0"></th>
+              <th className="border-r-0">
+                <button
+                  className="haru-btn haru-delete-btn-color text-base font-normal text-black my-auto mr-0 ml-auto"
+                  onClick={() => deleteTodo(idValue)}
+                >
+                  削除
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -189,6 +209,8 @@ export const TodoAdd = ({add}) => {
                 <input
                   type="text"
                   value={titleValue || ""}
+                  className={error ? "haru-todo-error-color" : ""}
+                  placeholder="タイトルを入力してください"
                   onChange={(event) => setTitleValue(event.target.value)}
                 />
               </td>
@@ -214,7 +236,7 @@ export const TodoAdd = ({add}) => {
                   name=""
                   id=""
                   className="font-semibold px-2 bg-gray-200"
-                  defaultValue={priorityValue}
+                  value={priorityValue || setPriorityValue("高")}
                   onChange={(event) => setPriorityValue(event.target.value)}
                 >
                   <option value="高">高</option>
@@ -231,18 +253,33 @@ export const TodoAdd = ({add}) => {
                       ? "font-semibold px-2 mb-2 bg-gray-200 haru-underline"
                       : "font-semibold px-2 bg-gray-200"
                   }
+                  value={groupSelected}
                   onChange={(event) => groupSelect(event)}
                 >
-                  <option value="なし">なし</option>
-                  <option value="追加">追加</option>
-                  <option value="Todoリスト">Todoリスト</option>
+                  <option value={1}>なし</option>
+                  <option value={2}>追加</option>
+                  {groupList &&
+                    groupList.map((group) => {
+                      return (
+                        group && (
+                          <option key={group.id} value={group.id}>
+                            {group.title}
+                          </option>
+                        )
+                      );
+                    })}
+                  {/* <option value="Todoリスト">Todoリスト</option> */}
                 </select>
                 {groupAdd && (
                   <div>
                     <input
                       type="text"
-                      className="haru-underline mb-2 w-9/12"
-                      onChange={(event) => setGroupSelected(event.target.value)}
+                      className={
+                        error
+                          ? "haru-todo-error-color haru-underline mb-2 w-9/12"
+                          : "haru-underline mb-2 w-9/12"
+                      }
+                      onChange={(event) => setGroupValue(event.target.value)}
                     />
                     {/* <button className="haru-btn my-auto mr-0 ml-auto bg-blue-200">
                       保存
@@ -262,12 +299,15 @@ export const TodoAdd = ({add}) => {
                   id=""
                   ref={commentRef}
                   rows={commentTextRows.current}
-                  className={codeAdd ? "mt-2 haru-underline" : "mt-2"}
+                  className={
+                   `${(codeAdd || codeValue) ? "mt-2 haru-underline" : "mt-2"}
+                    ${error ? "haru-todo-error-color" : ""}`
+                  }
                   onChange={commentChange}
                   value={commentValue || ""}
                   placeholder="内容を入力してください"
                 />
-                {codeAdd && (
+                {(codeAdd || codeValue) && (
                   <textarea
                     name=""
                     id=""
@@ -283,7 +323,7 @@ export const TodoAdd = ({add}) => {
               </td>
               <td className="border-l-0">
                 <button
-                  className="haru-btn my-auto mr-0 ml-auto bg-blue-200"
+                  className="haru-btn haru-save-btn-color my-auto mr-0 ml-auto"
                   onClick={() => saveTodo()}
                 >
                   保存
