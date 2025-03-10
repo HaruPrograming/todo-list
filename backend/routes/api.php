@@ -15,3 +15,4 @@ Route::post('addTodoGroup', [TodoListController::class, 'addTodoGroup']);
 Route::post('deleteTodo', [TodoListController::class, 'deleteTodo']);
 Route::post('deleteTodoGroup', [TodoListController::class, 'deleteTodoGroup']);
 Route::post('editTodo', [TodoListController::class, 'editTodo']);
+Route::post('editTodoCheckBox', [TodoListController::class, 'editTodoCheckBox']);

@@ -1,30 +1,45 @@
 import axios from 'axios'; 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useShowTodoContext } from '../context/showTodoContext';
 import { usegetTodoContext } from '../context/getTodoContext';
+import { useCookies } from 'react-cookie';
 
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
-  const { getTodoCheck, setGetTodoCheck } = usegetTodoContext();
-  const [csrfToken, setCsrfToken] = useState("");
+  const {
+    getTodoCheck,
+    setGetTodoCheck,
+    getTodoGroupCheck,
+    setGetTodoGroupCheck,
+  } = usegetTodoContext();
+  const [cookies, setCookie, removeCookie] = useCookies([""]);
 
   useEffect(() => {
-    if (csrfToken) return;
-    axios
-      .get("http://localhost:8000/csrf-token", { withCredentials: true })
-      .then((response) => setCsrfToken(response.data.csrf_token))
-      .catch((error) => console.error("CSRFトークン取得エラー:", error));
+    getCookeisToken();
   }, []);
 
-  // useEffect(() => {
-  //   if (!csrfToken || csrfToken == undefined) return;
-  //   console.log("CSRFトークン:", csrfToken);
-  // }, [csrfToken]);
+  const getCookeisToken = () => {
+    if (cookies["X-CSRF-TOKEN"]) return;
+    axios
+      .get("http://localhost:8000/csrf-token", { withCredentials: true })
+      .then((response) => {
+        console.log(response);
+        setCookie("X-CSRF-TOKEN", response.data.csrf_token);
+      })
+      .catch((error) => console.error("CSRFトークン取得エラー:", error));
+  }
 
   const showTodo = () => {
     try {
-      const response = axios.get("http://localhost:8000/api/showTodo");
-      response.then((res) => console.log("showTodo成功:", res));
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/showTodo")
+        .then((res) => {
+          console.log("showTodo成功:", res.data);
+          return res.data;
+        });
       return response;
     } catch (error) {
       console.error("showTodoエラー:", error);
@@ -34,8 +49,15 @@ export const TodoHooks = () => {
 
   const showTodoGroup = () => {
     try {
-      const response = axios.get("http://localhost:8000/api/showTodoGroup");
-      response.then((res) => console.log("showTodoGroup成功:", res));
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/showTodoGroup")
+        .then((res) => {
+          console.log("showTodoGroup成功:", res.data);
+          return res.data;
+        });
       return response;
     } catch (error) {
       console.error("showTodoGroupエラー:", error);
@@ -45,17 +67,20 @@ export const TodoHooks = () => {
 
   // addTodo
   const addTodo = async (todoData) => {
-    if (todoData.title == "" || todoData.comment == "") {
+    if (todoData.title == "") {
       return {
         status: "error",
-        comment: "タイトルもしくは内容が入力されていません。",
+        comment: "タイトルが入力されていません。",
       };
     }
     try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
       const response = await axios
         .post("http://localhost:8000/api/addTodo", todoData, {
           headers: {
-            "X-CSRF-TOKEN": csrfToken,
+            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
           withCredentials: true,
         })
@@ -75,18 +100,23 @@ export const TodoHooks = () => {
   // addTodoGroup
   const addTodoGroup = async (groupTitle) => {
     try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
       const response = await axios.post(
         "http://localhost:8000/api/addTodoGroup",
         { title: groupTitle },
         {
           headers: {
-            "X-CSRF-TOKEN": csrfToken,
+            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
           withCredentials: true,
         }
       );
       console.log("addTodoGroup成功:", response);
       setTodoAddCheck(false);
+      setGetTodoGroupCheck(!getTodoGroupCheck);
+      // setGetTodoCheck(!getTodoCheck);
       return response.data.todoGroup.id;
     } catch (error) {
       console.error("addTodoGroupエラー:", error);
@@ -97,13 +127,16 @@ export const TodoHooks = () => {
   // deleteTodo
   const deleteTodo = async (todoId) => {
     try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
       const response = await axios
         .post(
           "http://localhost:8000/api/deleteTodo",
           { id: todoId },
           {
             headers: {
-              "X-CSRF-TOKEN": csrfToken,
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
             },
             withCredentials: true,
           }
@@ -124,20 +157,23 @@ export const TodoHooks = () => {
   // deleteTodoGroup
   const deleteTodoGroup = async (todoGroupId) => {
     try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
       const response = await axios
         .post(
           "http://localhost:8000/api/deleteTodoGroup",
           { id: todoGroupId },
           {
             headers: {
-              "X-CSRF-TOKEN": csrfToken,
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
             },
             withCredentials: true,
           }
         )
         .then((res) => {
           console.log("deleteTodoGroup", res);
-          setGetTodoCheck(!getTodoCheck);
+          setGetTodoGroupCheck(!getTodoGroupCheck);
           // setTodoInfoCheck(res.data.todoGroup.id);
           return res;
         });
@@ -152,10 +188,13 @@ export const TodoHooks = () => {
   // editTodo
   const editTodo = async (todoData) => {
     try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
       const response = await axios
         .post("http://localhost:8000/api/editTodo", todoData, {
           headers: {
-            "X-CSRF-TOKEN": csrfToken,
+            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
           withCredentials: true,
         })
@@ -167,7 +206,37 @@ export const TodoHooks = () => {
       console.log("editTodo成功:", response);
       return response;
     } catch (error) {
-      console.error("editTodoエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      console.error("editTodoエラー:", error.response.data);
+      return error.response.data;
+    }
+  };
+
+  // editTodoCheck
+  const editTodoCheckBox = async (todoCheckData) => {
+    console.log("todoCheckData", todoCheckData);
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = await axios
+        .post("http://localhost:8000/api/editTodoCheckBox", todoCheckData, {
+          headers: {
+            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+          },
+          withCredentials: true,
+        })
+        .then((res) => {
+          setGetTodoCheck(!getTodoCheck);
+          return res.data;
+        });
+      console.log("editTodoCheckBox成功:", response);
+      return response;
+    } catch (error) {
+      console.error("editTodoCheckBoxエラー:", error);
       return error.response.data;
     }
   };
@@ -180,5 +249,6 @@ export const TodoHooks = () => {
     deleteTodo,
     deleteTodoGroup,
     editTodo,
+    editTodoCheckBox,
   };
 };

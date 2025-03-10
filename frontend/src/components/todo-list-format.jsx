@@ -8,21 +8,16 @@ export const TodoListFormat = ({ group }) => {
   const { dbTodoList } = usetodoDataContext();
   const { deleteTodoGroup } = TodoHooks();
   const { todoListInfoCheck, setTodoListInfoCheck, setTodoInfoCheck } = useShowTodoContext();
-  const [todoListInfoAllow, setTodoListInfoAllow] = useState("＞");
+  const [todoListInfoAllow, setTodoListInfoAllow] = useState(false);
   const [todoListExistCheck, setTodoListExistCheck] = useState(false);
-  // const showTodoListInfo = () => {
-  //   setTodoListInfoCheck(!todoListInfoCheck);
-  //   setTodoListInfoAllow(todoListInfoCheck ? "＞" : "ｖ");
-  // };
+
   useEffect(() => {
     if (todoListInfoCheck != group.id) {
-      setTodoListInfoAllow("＞");
+      setTodoListInfoAllow(false);
     } else {
-      setTodoListInfoAllow("ｖ");
+      setTodoListInfoAllow(true);
     }
   }, [todoListInfoCheck]);
-
-  const changeCheckBox = () => {};
 
   const showTodoListInfo = () => {
     if (todoListInfoCheck != group.id) {
@@ -35,7 +30,7 @@ export const TodoListFormat = ({ group }) => {
   };
 
   return (
-    <div className="haru-todo-list-block haru-todo-list-block-color">
+    <div className="haru-todo-list border-gray-500 bg-blue-500 bg-opacity-20">
       <div
         className="flex justify-between items-center mr-2"
         onClick={() => {
@@ -56,7 +51,10 @@ export const TodoListFormat = ({ group }) => {
           </span>
           <span className="haru-todo-list-date"></span>
         </p>
-        <div>{todoListInfoAllow}</div>
+        <img
+          src={"http://localhost:8000/storage/todo_info_allow.png"}
+          className={todoListInfoAllow ? "w-5 rotate-90" : "w-5"}
+        />
       </div>
       {todoListInfoCheck == group.id &&
         dbTodoList.map(

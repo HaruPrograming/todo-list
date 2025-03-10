@@ -7,10 +7,13 @@ export const usegetTodoContext = () => {
 
 export const GetTodoContextProvider = ({ children }) => {
   const [getTodoCheck, setGetTodoCheck] = useState(false);
+  const [getTodoGroupCheck, setGetTodoGroupCheck] = useState(false);
 
   const contextValue = {
     getTodoCheck,
     setGetTodoCheck,
+    getTodoGroupCheck,
+    setGetTodoGroupCheck,
   };
 
   return (

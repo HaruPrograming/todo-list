@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { TodoHooks } from "../hooks/todo-list-hooks";
 import { usetodoDataContext } from "../context/todoDataContext";
+import { useShowTodoContext } from "../context/showTodoContext";
 
 export const TodoAdd = ({ add }) => {
   const { showTodoGroup, addTodo, deleteTodo, addTodoGroup, editTodo } =
     TodoHooks();
   const { groupList, setGroupList } = usetodoDataContext();
+  const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
   const [idValue, setIdValue] = useState("");
   const [titleValue, setTitleValue] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -49,14 +51,15 @@ export const TodoAdd = ({ add }) => {
   }, []);
   
   const formatToDatetimeLocal = (date, addDate = 0, addHour = 0) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate() + addDate).padStart(2, "0");
+    const newDate = new Date(date);
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, "0");
+    const day = String(newDate.getDate() + addDate).padStart(2, "0");
     const hours =
-    date.getHours() + addHour == "24"
+    newDate.getHours() + addHour == "24"
     ? "00"
-    : String(date.getHours() + addHour).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
+    : String(newDate.getHours() + addHour).padStart(2, "0");
+    const minutes = String(newDate.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
 
@@ -109,7 +112,7 @@ export const TodoAdd = ({ add }) => {
     const inputDate = new Date(event.target.value);
     if (nowDateFormat < inputDate) {
       setStartDate(formatToDatetimeLocal(event.target.value));
-      endDateSet(inputDate);
+      endDateSet(inputDate, 1);
     }
   };
   
@@ -120,11 +123,11 @@ export const TodoAdd = ({ add }) => {
     }
   };
 
-  const endDateSet = (inputDate) => {
-    if (inputDate.getHours() == 23) {
+  const endDateSet = (inputDate, inputStartCheck) => {
+    if (inputStartCheck == 1 && inputDate.getHours() == 23) {
       setEndDate(formatToDatetimeLocal(inputDate, 1, 1));
-    } else if (new Date(endDate) < inputDate) {
-      setEndDate(formatToDatetimeLocal(inputDate, 0, 1));
+    } else if (new Date(startDate) < inputDate) {
+      setEndDate(formatToDatetimeLocal(inputDate));
     }
   };
 
@@ -143,21 +146,14 @@ export const TodoAdd = ({ add }) => {
   };
 
   const addGroupTodo = (saveSelect) => {
-    // console.log({
-    //   title: titleValue,
-    //   start_date: startDate,
-    //   end_date: endDate,
-    //   priority: priorityValue,
-    //   group_id: groupSelected,
-    //   comment: commentValue,
-    //   code: codeValue,
-    // });
+    const selectedPriorityValue = priorityValue || "高";
+    const selectedGroupSelected = groupSelected || null;
     const todoData = {
       title: titleValue,
       start_date: startDate,
       end_date: endDate,
-      priority: priorityValue,
-      group_id: groupSelected,
+      priority: selectedPriorityValue,
+      group_id: selectedGroupSelected,
       comment: commentValue,
       code: codeValue,
     };
@@ -170,7 +166,11 @@ export const TodoAdd = ({ add }) => {
         saveSelect(todoData);
       });
     } else {
-      saveSelect(todoData);
+      saveSelect(todoData).then((res) => {
+        if (res.status == 'error') {
+          setError(true);
+        }
+      });
     }
   };
 
@@ -192,14 +192,16 @@ export const TodoAdd = ({ add }) => {
               <th>日付</th>
               <th>重要度</th>
               <th>グループ</th>
-              <th>内容</th>
+              <th>メモ</th>
               <th className="border-r-0">
-                <button
-                  className="haru-btn haru-delete-btn-color text-base font-normal text-black my-auto mr-0 ml-auto"
-                  onClick={() => deleteTodo(idValue)}
-                >
-                  削除
-                </button>
+                {add && (
+                  <button
+                    className="haru-btn haru-delete-btn-color text-base font-normal text-black my-auto mr-0 ml-auto"
+                    onClick={() => deleteTodo(idValue)}
+                  >
+                    削除
+                  </button>
+                )}
               </th>
             </tr>
           </thead>
@@ -236,7 +238,7 @@ export const TodoAdd = ({ add }) => {
                   name=""
                   id=""
                   className="font-semibold px-2 bg-gray-200"
-                  value={priorityValue || setPriorityValue("高")}
+                  value={priorityValue || ""}
                   onChange={(event) => setPriorityValue(event.target.value)}
                 >
                   <option value="高">高</option>
@@ -253,7 +255,7 @@ export const TodoAdd = ({ add }) => {
                       ? "font-semibold px-2 mb-2 bg-gray-200 haru-underline"
                       : "font-semibold px-2 bg-gray-200"
                   }
-                  value={groupSelected}
+                  value={groupSelected || ""}
                   onChange={(event) => groupSelect(event)}
                 >
                   <option value={1}>なし</option>
@@ -300,12 +302,11 @@ export const TodoAdd = ({ add }) => {
                   ref={commentRef}
                   rows={commentTextRows.current}
                   className={
-                   `${(codeAdd || codeValue) ? "mt-2 haru-underline" : "mt-2"}
-                    ${error ? "haru-todo-error-color" : ""}`
+                    codeAdd || codeValue ? "mt-2 haru-underline" : "mt-2"
                   }
                   onChange={commentChange}
                   value={commentValue || ""}
-                  placeholder="内容を入力してください"
+                  placeholder="メモを入力してください"
                 />
                 {(codeAdd || codeValue) && (
                   <textarea

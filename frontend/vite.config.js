@@ -8,4 +8,11 @@ export default defineConfig({
     host: '0.0.0.0', // Docker コンテナ内でアクセス可能にする
     port: 5173, // React アプリのポート
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "src/styles/global.scss";`
+      }
+    }
+  },
 })
