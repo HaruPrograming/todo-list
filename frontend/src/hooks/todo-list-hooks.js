@@ -1,5 +1,5 @@
 import axios from 'axios'; 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShowTodoContext } from '../context/showTodoContext';
 import { usegetTodoContext } from '../context/getTodoContext';
 import { useCookies } from 'react-cookie';
@@ -13,22 +13,92 @@ export const TodoHooks = () => {
     setGetTodoGroupCheck,
   } = usegetTodoContext();
   const [cookies, setCookie, removeCookie] = useCookies([""]);
+  // const todoLength = useRef(0);
+  // const [todoLength, setTodolength] = useState(0);
 
-  useEffect(() => {
-    getCookeisToken();
-  }, []);
-
+  // getCookeisToken
   const getCookeisToken = () => {
-    if (cookies["X-CSRF-TOKEN"]) return;
     axios
       .get("http://localhost:8000/csrf-token", { withCredentials: true })
       .then((response) => {
-        console.log(response);
         setCookie("X-CSRF-TOKEN", response.data.csrf_token);
+        console.log("X-CSRF-TOKEN", response.data);
       })
-      .catch((error) => console.error("CSRFトークン取得エラー:", error));
-  }
+      .catch((error) =>
+        console.error("CSRFトークン取得エラー:", error.response.data.message)
+      );
+  };
 
+  // getTodosLastId
+  const getTodosLastId = () => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/getTodosLastId")
+        .then((res) => {
+          console.log("getTodosLastId成功:", res.data);
+          return res.data.todosLastId + 1;
+        });
+      return response;
+    } catch (error) {
+      console.error("getTodosLastIdエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // getTodoGroupsLastId
+  const getTodoGroupsLastId = () => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/getTodoGroupsLastId")
+        .then((res) => {
+          console.log("getTodoGroupsLastId成功:", res.data);
+          return res.data.groupsLastId + 1;
+        });
+      return response;
+    } catch (error) {
+      console.error("getTodoGroupsLastIdエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // getTodoImagesLastId
+  const getTodoImagesLastId = () => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/getTodoImagesLastId")
+        .then((res) => {
+          console.log("getTodoImagesLastId成功:", res.data);
+          return res.data.imagesLastId + 1;
+        });
+      return response;
+    } catch (error) {
+      console.error("getTodoImagesLastIdエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // showTodo
   const showTodo = () => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
@@ -42,11 +112,16 @@ export const TodoHooks = () => {
         });
       return response;
     } catch (error) {
-      console.error("showTodoエラー:", error);
+      console.error("showTodoエラー:", error.response.data);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
 
+  // showTodoGroup
   const showTodoGroup = () => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
@@ -60,13 +135,40 @@ export const TodoHooks = () => {
         });
       return response;
     } catch (error) {
-      console.error("showTodoGroupエラー:", error);
+      console.error("showTodoGroupエラー:", error.response.data);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // showTodoImage
+  const showTodoImage = () => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = axios
+        .get("http://localhost:8000/api/showTodoImage")
+        .then((res) => {
+          console.log("showTodoImage成功:", res.data);
+          return res.data;
+        });
+      return response;
+    } catch (error) {
+      console.error("showTodoImageエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
 
   // addTodo
-  const addTodo = async (todoData) => {
+  const addTodo = (todoData) => {
     if (todoData.title == "") {
       return {
         status: "error",
@@ -77,49 +179,109 @@ export const TodoHooks = () => {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
-      const response = await axios
-        .post("http://localhost:8000/api/addTodo", todoData, {
-          headers: {
-            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
-          },
-          withCredentials: true,
-        })
-        .then((res) => {
-          setTodoAddCheck(false);
-          setGetTodoCheck(!getTodoCheck);
-          return res.data;
-        });
-      console.log("addTodo成功:", response);
+      const response = getTodosLastId().then((res) => {
+        todoData.id = res;
+        const addResponse = axios
+          .post("http://localhost:8000/api/addTodo", todoData, {
+            headers: {
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+            },
+            withCredentials: true,
+          })
+          .then((res) => {
+            setTodoAddCheck(false);
+            setGetTodoCheck(!getTodoCheck);
+            return res.data;
+          });
+        return addResponse;
+      });
+      response.then((res) => console.log("addTodo成功:", res));
       return response;
     } catch (error) {
-      console.error("addTodoエラー:", error);
+      console.error("addTodoエラー:", error.response.data.message);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
 
   // addTodoGroup
-  const addTodoGroup = async (groupTitle) => {
+  const addTodoGroup = (groupTitle) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
-      const response = await axios.post(
-        "http://localhost:8000/api/addTodoGroup",
-        { title: groupTitle },
-        {
-          headers: {
-            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
-          },
-          withCredentials: true,
-        }
-      );
-      console.log("addTodoGroup成功:", response);
-      setTodoAddCheck(false);
-      setGetTodoGroupCheck(!getTodoGroupCheck);
-      // setGetTodoCheck(!getTodoCheck);
-      return response.data.todoGroup.id;
+      const response = getTodoGroupsLastId().then((res) => {
+        const groupId = res;
+        const groupData = {
+          id: groupId,
+          title: groupTitle,
+        };
+        const addGroupResponse = axios
+          .post("http://localhost:8000/api/addTodoGroup", groupData, {
+            headers: {
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+            },
+            withCredentials: true,
+          })
+          .then((res) => {
+            console.log("addTodoGroup成功:", res);
+            setTodoAddCheck(false);
+            setGetTodoGroupCheck(!getTodoGroupCheck);
+            return groupId;
+          });
+        return addGroupResponse;
+      });
+      return response;
     } catch (error) {
       console.error("addTodoGroupエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // addTodoImage
+  const addTodoImage = (todoId, imagePath) => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = getTodoImagesLastId().then((res) => {
+        console.log("resres", res);
+        const imageId = res;
+        const imageData = new FormData();
+        imageData.append("id", imageId);
+        imageData.append("todo_id", todoId);
+        imageData.append("todo_image", imagePath);
+        // const imageData = {
+        //   id: imageId,
+        //   todo_image: imagePath,
+        // };
+        const addImageResponse = axios
+          .post("http://localhost:8000/api/addTodoImage", imageData, {
+            headers: {
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+            },
+            withCredentials: true,
+          })
+          .then((res) => {
+            console.log("addTodoImage成功:", res);
+            return res.data.todoImage;
+          });
+        return addImageResponse;
+      });
+      return response;
+    } catch (error) {
+      console.error("addTodoGroupエラー:", error.response.data);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
@@ -149,7 +311,11 @@ export const TodoHooks = () => {
       console.log("deleteTodo成功:", response);
       return response;
     } catch (error) {
-      console.error("deleteTodoエラー:", error);
+      console.error("deleteTodoエラー:", error.response.data);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
@@ -172,15 +338,49 @@ export const TodoHooks = () => {
           }
         )
         .then((res) => {
-          console.log("deleteTodoGroup", res);
           setGetTodoGroupCheck(!getTodoGroupCheck);
-          // setTodoInfoCheck(res.data.todoGroup.id);
           return res;
         });
       console.log("deleteTodoGroup成功:", response);
       return response;
     } catch (error) {
       console.error("deleteTodoGroupエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // deleteTodoImage
+  const deleteTodoImage = async (todoImageId) => {
+    try {
+      if (!cookies["X-CSRF-TOKEN"]) {
+        getCookeisToken();
+      }
+      const response = await axios
+        .post(
+          "http://localhost:8000/api/deleteTodoImage",
+          { id: todoImageId },
+          {
+            headers: {
+              "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+            },
+            withCredentials: true,
+          }
+        )
+        .then((res) => {
+          return res.data;
+        });
+      console.log("deleteTodoImage成功:", response);
+      return response;
+    } catch (error) {
+      console.error("deleteTodoImageエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
@@ -217,11 +417,7 @@ export const TodoHooks = () => {
 
   // editTodoCheck
   const editTodoCheckBox = async (todoCheckData) => {
-    console.log("todoCheckData", todoCheckData);
     try {
-      if (!cookies["X-CSRF-TOKEN"]) {
-        getCookeisToken();
-      }
       const response = await axios
         .post("http://localhost:8000/api/editTodoCheckBox", todoCheckData, {
           headers: {
@@ -237,6 +433,35 @@ export const TodoHooks = () => {
       return response;
     } catch (error) {
       console.error("editTodoCheckBoxエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
+      return error.response.data;
+    }
+  };
+
+  // editTodoImage
+  const editTodoImage = async (todoImageData) => {
+    try {
+      const response = await axios
+        .post("http://localhost:8000/api/editTodoImage", todoImageData, {
+          headers: {
+            "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
+          },
+          withCredentials: true,
+        })
+        .then((res) => {
+          return res.data;
+        });
+      console.log("editTodoImage成功:", response);
+      return response;
+    } catch (error) {
+      console.error("editTodoImageエラー:", error);
+      if (error.status == 419) {
+        setCookie("X-CSRF-TOKEN", "");
+        getCookeisToken();
+      }
       return error.response.data;
     }
   };
@@ -244,11 +469,15 @@ export const TodoHooks = () => {
   return {
     showTodo,
     showTodoGroup,
+    showTodoImage,
     addTodo,
     addTodoGroup,
+    addTodoImage,
     deleteTodo,
     deleteTodoGroup,
+    deleteTodoImage,
     editTodo,
     editTodoCheckBox,
+    editTodoImage,
   };
 };

@@ -42,7 +42,7 @@ export const TodoListFormat = ({ group }) => {
           <span>
             {todoListInfoCheck == group.id && !todoListExistCheck && (
               <button
-                className="haru-btn haru-delete-btn-color m-0 ml-2 text-base font-normal text-black"
+                className="haru-btn py-0 haru-delete-btn-color m-0 ml-2 text-base font-normal text-black"
                 onClick={() => deleteTodoGroup(group.id)}
               >
                 削除
@@ -59,7 +59,7 @@ export const TodoListFormat = ({ group }) => {
       {todoListInfoCheck == group.id &&
         dbTodoList.map(
           (todo) =>
-            todo.group_id == group.id &&
+            group.id == todo.group_id &&
             (!todoListExistCheck && setTodoListExistCheck(true),
             (<TodoFormat key={todo.id} todo={todo} />))
         )}

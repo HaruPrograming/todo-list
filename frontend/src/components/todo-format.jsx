@@ -17,12 +17,12 @@ export const TodoFormat = ({ todo }) => {
   useEffect(() => {
     const today = format(new Date(), dateFormat, { locale: ja });
     const todoStartDate = format(new Date(todo.start_date), dateFormat, { locale: ja });
-    if (today > todoStartDate) {
-      if (todo.check == 0 && todo.check != 3) {
-        toggleTodoCheckBox(3);
-      } else if (todo.check == 1) {
-        toggleTodoCheckBox(4);
-      }
+    const todoEndDate = format(new Date(todo.end_date), dateFormat, { locale: ja });
+    if (today > todoStartDate && todo.check == 0) {
+      toggleTodoCheckBox(3);
+    }
+    if (today > todoEndDate && todo.check == 1) {
+      toggleTodoCheckBox(4);
     }
   }, []);
 

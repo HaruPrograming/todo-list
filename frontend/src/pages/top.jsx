@@ -13,20 +13,27 @@ import { TodoListFormat } from "../components/todo-list-format";
 import { TodoFormat } from "../components/todo-format";
 import { TodoAdd } from "../components/todo-add";
 import { TodoHooks } from "../hooks/todo-list-hooks";
+import { FilteringTodoList } from "../components/filtering-todo-list";
 
 export const Top = () => {
   const { showTodo, showTodoGroup } = TodoHooks();
   const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
   const { getTodoCheck, getTodoGroupCheck } = usegetTodoContext();
-  const { dbTodoList, setDbTodoList, groupList, setGroupList } =
+  const { dbTodoList, setDbTodoList, dbSouceTodoList, setSouceDbTodoList, groupList, setGroupList } =
     usetodoDataContext();
   const [todoAddValue, setTodoAddValue] = useState("追加");
+  const [filteringValue, setFilteringValue] = useState("絞り込み");
   const [currentDate, setCurrentDate] = useState("");
   const [event, setEvent] = useState([]);
-  const [currentView, setCurrentView] = useState(Views.MONTH); // 現在のビューを管理
+  const [currentView, setCurrentView] = useState(Views.MONTH);
+  const [filteringCheck, setFilteringCheck] = useState(false);
+  const [filteringAscCheck, setFilteringAscCheck] = useState(true);
+  const [filteringDescCheck, setFilteringDescCheck] = useState(false);
+  const [filterEndShowCheck, setFilterEndShowCheck] = useState(false);
+  const [filterGroupCheck, setFilterGroupCheck] = useState(false);
   const dateFormat = "yyyy-MM-dd";
 
-  const locales = { ja }; // 日本語ロケールを設定
+  const locales = { ja };
   const localizer = dateFnsLocalizer({
     format,
     parse,
@@ -43,8 +50,34 @@ export const Top = () => {
   useEffect(() => {
     setTodoAddValue(!todoAddCheck ? "追加" : "閉じる");
     showTodo().then((res) => {
-      setDbTodoList(res.todoList);
+        if (filteringAscCheck) {
+          setDbTodoList(
+            res.todoList.sort(
+              (a, b) => new Date(a.start_date) - new Date(b.start_date)
+            )
+          );
+          setSouceDbTodoList(
+            res.todoList.sort(
+              (a, b) => new Date(a.start_date) - new Date(b.start_date)
+            )
+          );
+        }
+        if (filteringDescCheck) {
+          setDbTodoList(
+            res.todoList.sort(
+              (a, b) => new Date(b.start_date) - new Date(a.start_date)
+            )
+          );
+          setSouceDbTodoList(
+            res.todoList.sort(
+              (a, b) => new Date(b.start_date) - new Date(a.start_date)
+            )
+          );
+        }
+      // setDbTodoList(res.todoList);
+      // setSouceDbTodoList(res.todoList);
     });
+    setSouceDbTodoList(dbTodoList);
   }, [getTodoCheck]);
 
   useEffect(() => {
@@ -73,6 +106,11 @@ export const Top = () => {
     setTodoAddCheck(!todoAddCheck);
   };
 
+  const showfFltering = () => {
+    setFilteringValue(filteringCheck ? "絞り込み" : "閉じる");
+    setFilteringCheck(!filteringCheck);
+  };
+
   const eventPropGetter = (event) => {
     switch (event.check) {
       case 0:
@@ -92,6 +130,14 @@ export const Top = () => {
 
   const dayPropGetter = (date) => {
     const dayOfWeek = date.getDay();
+    const getDate = format(date, dateFormat);
+    const nowDate = format(new Date(), dateFormat);
+    if (getDate == nowDate) {
+      return {
+        className: "bg-green-200",
+      };
+    }
+
     if (dayOfWeek === 0) {
       return {
         className: "bg-red-200",
@@ -102,6 +148,7 @@ export const Top = () => {
       };
     }
 
+
     return {};
   };
 
@@ -109,23 +156,6 @@ export const Top = () => {
     console.log("ナビゲートされた日付: ", date.toDateString());
     setCurrentDate(formatDate(date));
   };
-
-  // const handleEventDrop = ({ event, start, end }) =>
-  //   const updatedEvent = { ...event, start, end };
-  //   setEvents(events.map((e) => (e === event ? updatedEvent : e)));
-  // };
-
-  // const handleEventClick = (event) => {
-  //   alert(`Event: ${event.title} starts at ${event.start}`);
-  // };
-
-  // カレンダーのビューが変更されたときに現在の月を設定
-  // const handleViewChange = (view) => {
-  //   if (view === "month") {
-  //     const month = format(new Date(), "YYYY MM"); // 現在の月を 'Month Year' 形式で取得
-  //     setCurrentMonth(month);
-  //   }
-  // };
 
   const formatDate = (date, changeMonthValue) => {
     const newDate = new Date(date);
@@ -139,73 +169,83 @@ export const Top = () => {
     setCurrentView(view);
   };
 
-  // const changeMonth = (changeValue) => {
-  //   const date = formatDate(currentDate, changeValue);
-  //   setCurrentDate(date);
-  // }
-
   const CustomEvent = ({ event }) => {
     if (currentView === Views.MONTH) {
       return <div></div>;
     }
     return (
       <div>
-        {/* {event.date} */}
         {event.title}
       </div>
     );
   };
 
-  // const CustomToolbar = ({ label, onNavigate, onView }) => {
-  //   return (
-  //     <div className="flex justify-between items-center p-2">
-  //       <button
-  //         onClick={() => onNavigate("TODAY")}
-  //         className="haru-c arendar-header-change-btn"
-  //       >
-  //         今日
-  //       </button>
-  //       <button
-  //         onClick={() => onNavigate("PREV")}
-  //         className="haru-carendar-header-btn"
-  //       >
-  //         ＜
-  //       </button>
-  //       <span className="">{label}</span>
-  //       <button
-  //         onClick={() => onNavigate("NEXT")}
-  //         className="haru-carendar-header-btn"
-  //       >
-  //         ＞
-  //       </button>
+  // useEffect(() => {
+  //   if (!filteringAscCheck) {
+  //     setDbTodoList(
+  //       dbTodoList.sort(
+  //         (a, b) => new Date(a.start_date) - new Date(b.start_date)
+  //       )
+  //     );
+  //   }
+  //   if (!filteringDescCheck) {
+  //     setDbTodoList(
+  //       dbTodoList.sort(
+  //         (a, b) => new Date(b.start_date) - new Date(a.start_date)
+  //       )
+  //     );
+  //   }
+  // }, [filteringAscCheck, filteringDescCheck]);
 
-  //       <div>
-  //         <button
-  //           onClick={() => onView("month")}
-  //           className="haru-carendar-header-change-btn"
-  //         >
-  //           月
-  //         </button>
-  //         <button
-  //           onClick={() => onView("week")}
-  //           className="haru-carendar-header-change-btn"
-  //         >
-  //           週
-  //         </button>
-  //         <button
-  //           onClick={() => onView("day")}
-  //           className="haru-carendar-header-change-btn"
-  //         >
-  //           日
-  //         </button>
-  //       </div>
-  //     </div>
-  //   );
-  // };
+  const filteringAsc = () => {
+    setFilteringAscCheck(true);
+    setFilteringDescCheck(false);
+    setDbTodoList(
+      dbTodoList.sort(
+        (a, b) => new Date(a.start_date) - new Date(b.start_date)
+      )
+    );
+  };
+
+  const filteringDesc = () => {
+    setFilteringAscCheck(false);
+    setFilteringDescCheck(true);
+    setDbTodoList(
+      dbTodoList.sort(
+        (a, b) => new Date(b.start_date) - new Date(a.start_date)
+      )
+    );
+  };
+  
+  const filterEndTodoShow = (event) => {
+    const checked = event.target.checked;
+    if (checked == true) {
+      setFilterEndShowCheck(true);
+      setDbTodoList([]);
+      dbSouceTodoList?.map((todo) => {
+        if (todo.check != 2) {
+          setDbTodoList((prev) => [...prev, todo])
+        }
+      })
+    } else if (checked == false) {
+      setFilterEndShowCheck(false);
+      setDbTodoList(dbSouceTodoList);
+    }
+  }
+
+  const filterGroupShow = (event) => {
+    const checked = event.target.checked;
+    console.log(filterGroupCheck)
+    if (checked == true) {
+      setFilterGroupCheck(true);
+    } else if (checked == false) {
+      setFilterGroupCheck(false);
+    }
+  }
 
   return (
     <>
-      <div className="h-dvh">
+      <div className="h-screen">
         <div className="h-1/2">
           <Calendar
             className="w-full mt-2 rounded-md bg-gray-100"
@@ -234,25 +274,68 @@ export const Top = () => {
         <div className="mx-auto pb-3">
           <div className="flex justify-between">
             <div>
-              <p>
+              <p className="text-xs mt-1">
                 重要度：
-                <span className="px-1 ml-1 bg-red-400 rounded-md">高</span>
-                <span className="px-1 ml-1 bg-yellow-400 rounded-md">中</span>
-                <span className="px-1 ml-1 bg-blue-400 rounded-md">低</span>
+                <span className="text-xs w-fit px-1 ml-1 bg-red-400 rounded-md">
+                  高
+                </span>
+                <span className="text-xs w-fit px-1 ml-1 bg-yellow-400 rounded-md">
+                  中
+                </span>
+                <span className="text-xs w-fit px-1 ml-1 bg-blue-400 rounded-md">
+                  低
+                </span>
               </p>
-              <p>
-                実行状況：
-                <span className="px-1 ml-1 bg-white rounded-md">未実行</span>
-                <span className="px-1 ml-1 bg-blue-400 rounded-md">実行中</span>
-                <span className="px-1 ml-1 bg-green-400 rounded-md">完了</span>
-                <span className="px-1 ml-1 bg-red-400 rounded-md">遅れ</span>
-                <span className="px-1 ml-1 bg-violet-400 rounded-md">遅れ実行</span>
+              {/* <div className="flex">
+                <p className="text-xs w-fit px-1 ml-1 bg-red-400 rounded-md">
+                  高
+                </p>
+                <p className="text-xs w-fit px-1 ml-1 bg-yellow-400 rounded-md">
+                  中
+                </p>
+                <p className="text-xs w-fit px-1 ml-1 bg-blue-400 rounded-md">
+                  低
+                </p>
+              </div> */}
+              <p className="text-xs w-fit mt-1">
+                状況：
+                <span className="text-xs w-fit px-1 ml-1 bg-blue-400 rounded-md">
+                  実行中
+                </span>
+                <span className="text-xs w-fit px-1 ml-1 bg-green-400 rounded-md">
+                  完了
+                </span>
+                <span className="text-xs w-fit px-1 ml-1 bg-red-400 rounded-md">
+                  遅れ
+                </span>
+                <span className="text-xs w-fit px-1 ml-1 bg-violet-400 rounded-md">
+                  遅れ実行中
+                </span>
               </p>
+              {/* <div className="flex">
+                <p className="text-xs w-fit px-1 ml-1 bg-blue-400 rounded-md">
+                  実行中
+                </p>
+                <p className="text-xs w-fit px-1 ml-1 bg-green-400 rounded-md">
+                  完了
+                </p>
+                <p className="text-xs w-fit px-1 ml-1 bg-red-400 rounded-md">
+                  遅れ
+                </p>
+                <p className="text-xs w-fit px-1 ml-1 bg-violet-400 rounded-md">
+                  遅れ実行中
+                </p>
+              </div> */}
             </div>
             <div className="flex">
-              <button className="haru-btn haru-btn-color">絞り込み</button>
               <button
                 className="haru-btn haru-btn-color"
+                onClick={() => showfFltering()}
+              >
+                {filteringValue}
+              </button>
+              <button
+                className="haru-btn ml-1 haru-btn-color"
                 onClick={() => showTodoAdd()}
               >
                 {todoAddValue}
@@ -265,12 +348,32 @@ export const Top = () => {
             </h1>
           )}
           {todoAddCheck && <TodoAdd />}
-          {groupList &&
-            groupList.map((group) => (
+          <FilteringTodoList
+            filteringAsc={filteringAsc}
+            filteringDesc={filteringDesc}
+            filteringAscCheck={filteringAscCheck}
+            filteringDescCheck={filteringDescCheck}
+            filterEndTodoShow={filterEndTodoShow}
+            filterGroupShow={filterGroupShow}
+            filterEndShowCheck={filterEndShowCheck}
+            filterGroupCheck={filterGroupCheck}
+            filteringCheck={filteringCheck}
+            showfFltering={showfFltering}
+          />
+          {groupList && !filterGroupCheck &&
+            groupList?.map((group) => (
               <TodoListFormat key={group.id} group={group} />
             ))}
-          {dbTodoList.map((todo) => {
-            return !todo.group_id && <TodoFormat key={todo.id} todo={todo} />;
+          {groupList?.map((group) => (
+            dbTodoList?.map((todo, todoIndex) => {
+              if (group.id == todo.group_id) return;
+              console.log(todoIndex, dbTodoList.length - 1);
+              return todoIndex == dbTodoList.length -1 && <TodoFormat key={todo.id} todo={todo} />;
+            })
+          ))}
+          {groupList == "" && 
+            dbTodoList?.map((todo) => {
+              return  <TodoFormat key={todo.id} todo={todo} />;
           })}
           {/* <TodoListFormat />
           <TodoFormat /> */}

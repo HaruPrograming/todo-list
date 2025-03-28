@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class TodoGroup extends Model
 {
-    protected $table = 'haru_database.group';
+    protected $table = 'haru_database.todo_group';
 }

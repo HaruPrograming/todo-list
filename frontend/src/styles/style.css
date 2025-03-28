@@ -12,6 +12,7 @@ body,
 #root {
   @apply mx-auto;
   width: 93vw;
+  max-width: 800px;
 }
 
 p,
@@ -74,7 +75,7 @@ option {
 
 @layer components {
   .haru-btn {
-    @apply block text-base px-2 py-1 mt-2 mb-2 mr-2 rounded-md;
+    @apply block text-base px-2 py-1 mt-2 mb-2 rounded-md;
   }
   .haru-code-btn {
     @apply block px-1 mt-1 ml-auto rounded-md;

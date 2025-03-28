@@ -7,13 +7,19 @@ export const usetodoDataContext = () => {
 
 export const TodoDataContextProvider = ({ children }) => {
   const [dbTodoList, setDbTodoList] = useState([]);
+  const [dbSouceTodoList, setSouceDbTodoList] = useState([]);
   const [groupList, setGroupList] = useState([]);
+  const [imageList, setImageList] = useState([]);
 
   const contextValue = {
     dbTodoList,
     setDbTodoList,
+    dbSouceTodoList,
+    setSouceDbTodoList,
     groupList,
     setGroupList,
+    imageList,
+    setImageList,
   };
 
   return (

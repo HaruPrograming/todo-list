@@ -3,10 +3,27 @@ import { TodoHooks } from "../hooks/todo-list-hooks";
 import { usetodoDataContext } from "../context/todoDataContext";
 import { useShowTodoContext } from "../context/showTodoContext";
 
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination } from "swiper/modules"; // ✅ 修正ポイント
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+
+import { set } from "date-fns";
+
 export const TodoAdd = ({ add }) => {
-  const { showTodoGroup, addTodo, deleteTodo, addTodoGroup, editTodo } =
-    TodoHooks();
-  const { groupList, setGroupList } = usetodoDataContext();
+  const {
+    showTodoGroup,
+    showTodoImage,
+    addTodo,
+    addTodoGroup,
+    addTodoImage,
+    editTodo,
+    editTodoImage,
+    deleteTodo,
+    deleteTodoImage,
+  } = TodoHooks();
+  const { groupList, setGroupList, imageList, setImageList } = usetodoDataContext();
   const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
   const [idValue, setIdValue] = useState("");
   const [titleValue, setTitleValue] = useState("");
@@ -20,15 +37,24 @@ export const TodoAdd = ({ add }) => {
   const [codeAdd, setCodeAdd] = useState(false);
   const [groupAdd, setGroupAdd] = useState(false);
   const [error, setError] = useState("");
+  const [imageDeleteCheck, setImageDeleteCheck] = useState(-1);
+  const [imageDelete, setImageDelete] = useState(-1);
   const commentRef = useRef("");
   const codeRef = useRef("");
   const commentTextRows = useRef(1);
   const codeTextRows = useRef(1);
   const commentNewLine = useRef(0);
   const codeNewLine = useRef(0);
+  const valueLineRef = useRef(0);
+  const valueSliceRef = useRef("");
   const nowDate = new Date();
+  const nowDateFormat = useRef("");
+  const imageFile = useRef(null);
+  // const nowDateFormat = new Date(formatToDatetimeLocal(nowDate));
+
   
   useEffect(() => {
+    nowDateFormat.current = new Date(formatToDatetimeLocal(nowDate));
     setStartDate(formatToDatetimeLocal(nowDate));
     if (nowDate.getHours() == 23) {
       setEndDate(formatToDatetimeLocal(nowDate, 1, 1));
@@ -38,15 +64,39 @@ export const TodoAdd = ({ add }) => {
     // showTodoGroup().then((res) =>{
     //   setGroupList(res.data);
     // });
+    // showTodoImage().then((res) => {
+    //   setImageList(res.todoImage);
+    // });
+    if (imageList == "") {
+      showTodoImage().then((res) => {
+        setImageList(res.todoImage);
+      });
+    }
     if (add) {
       setIdValue(add.id);
       setTitleValue(add.title);
       setStartDate(add.start_date);
       setEndDate(add.end_date);
-      setGroupSelected(add.group_id);
+      groupList.map((group) => {
+        if (group.todo_id == add.id) {
+          setGroupSelected(group.id);
+        }
+      });
       setPriorityValue(add.priority);
       setCommentValue(add.comment);
       setCodeValue(add.code);
+      add.comment &&
+        (commentTextRows.current = textRows(
+          commentRef,
+          commentNewLine,
+          add.comment
+        ));
+      add.code &&
+        (codeTextRows.current = textRows(
+          codeRef,
+          codeNewLine,
+          add.code
+        ));
     }
   }, []);
   
@@ -77,13 +127,19 @@ export const TodoAdd = ({ add }) => {
     codeTextRows.current = textRows(codeRef, codeNewLine, event.target.value);
   };
 
-  const valueLineRef = useRef(0);
-  const valueSliceRef = useRef("");
   const textRows = (valueRef, valueNewLine, value) => {
+    // console.log(
+    //   "codeRef",
+    //   valueRef.current,
+    //   "codeNewLine",
+    //   valueNewLine.current,
+    //   "value",
+    //   value
+    // );
     if (valueRef.current) {
       valueNewLine.current = value.match(/\r\n|\n/g)
-        ? value.match(/\r\n|\n/g).length
-        : 1;
+      ? value.match(/\r\n|\n/g).length
+      : 1;
       valueSliceRef.current = value;
       if (valueSliceRef.current.indexOf("\n") > -1) {
         while (valueSliceRef.current.indexOf("\n") > -1) {
@@ -105,12 +161,10 @@ export const TodoAdd = ({ add }) => {
       return 1;
     }
   };
-
-  const nowDateFormat = new Date(formatToDatetimeLocal(nowDate));
   
   const startDateChange = (event) => {
     const inputDate = new Date(event.target.value);
-    if (nowDateFormat < inputDate) {
+    if (nowDateFormat.current < inputDate) {
       setStartDate(formatToDatetimeLocal(event.target.value));
       endDateSet(inputDate, 1);
     }
@@ -118,7 +172,7 @@ export const TodoAdd = ({ add }) => {
   
   const endDateChange = (event) => {
     const inputDate = new Date(event.target.value);
-    if (new Date(startDate) < inputDate && nowDateFormat < inputDate) {
+    if (new Date(startDate) < inputDate && nowDateFormat.current < inputDate) {
       endDateSet(inputDate);
     }
   };
@@ -132,20 +186,20 @@ export const TodoAdd = ({ add }) => {
   };
 
   const groupSelect = (event) => {
-    if (event.target.value === "1") {
+    if (event.target.value === "-1") {
       setGroupSelected(null);
     } else {
       setGroupSelected(event.target.value);
     }
 
-    if (event.target.value === "2") {
+    if (event.target.value === "0") {
       setGroupAdd(true);
     } else {
       setGroupAdd(false);
     }
   };
 
-  const addGroupTodo = (saveSelect) => {
+  const addTodoData = (saveSelect) => {
     const selectedPriorityValue = priorityValue || "高";
     const selectedGroupSelected = groupSelected || null;
     const todoData = {
@@ -161,10 +215,17 @@ export const TodoAdd = ({ add }) => {
       todoData.id = idValue;
     }
     if (groupValue) {
+      // saveSelect(todoData).then((res) => {
+      //   addTodoGroup(res.todo.id, groupValue);
+      //   if (res.status == "error") {
+      //     setError(true);
+      //   }
+      // });
       addTodoGroup(groupValue).then((res) => {
-        todoData.group_id = res;
-        saveSelect(todoData);
-      });
+          // console.log('res', res)
+          todoData.group_id = res;
+          saveSelect(todoData);
+        });
     } else {
       saveSelect(todoData).then((res) => {
         if (res.status == 'error') {
@@ -176,11 +237,15 @@ export const TodoAdd = ({ add }) => {
 
   const saveTodo = () => {
     if (idValue) {
-      addGroupTodo(editTodo);
+      addTodoData(editTodo);
     } else {
-      addGroupTodo(addTodo);
+      addTodoData(addTodo);
     }
   };
+
+  const addImage = () => {
+    imageFile.current.click();
+  }
 
   return (
     <>
@@ -193,6 +258,7 @@ export const TodoAdd = ({ add }) => {
               <th>重要度</th>
               <th>グループ</th>
               <th>メモ</th>
+              <th>画像</th>
               <th className="border-r-0">
                 {add && (
                   <button
@@ -221,7 +287,7 @@ export const TodoAdd = ({ add }) => {
                   type="datetime-local"
                   className="w-fit"
                   value={startDate}
-                  min={nowDateFormat}
+                  min={nowDateFormat.current}
                   onChange={(event) => startDateChange(event)}
                 />
                 <p className="ml-20">≀</p>
@@ -229,7 +295,7 @@ export const TodoAdd = ({ add }) => {
                   type="datetime-local"
                   className="w-fit"
                   value={endDate}
-                  min={nowDateFormat}
+                  min={nowDateFormat.current}
                   onChange={(event) => endDateChange(event)}
                 />
               </td>
@@ -258,8 +324,8 @@ export const TodoAdd = ({ add }) => {
                   value={groupSelected || ""}
                   onChange={(event) => groupSelect(event)}
                 >
-                  <option value={1}>なし</option>
-                  <option value={2}>追加</option>
+                  <option value={-1}>なし</option>
+                  <option value={0}>追加</option>
                   {groupList &&
                     groupList.map((group) => {
                       return (
@@ -289,7 +355,7 @@ export const TodoAdd = ({ add }) => {
                   </div>
                 )}
               </td>
-              <td className="">
+              <td>
                 <button
                   className="haru-code-btn haru-btn-color"
                   onClick={() => showcodeAdd()}
@@ -299,28 +365,106 @@ export const TodoAdd = ({ add }) => {
                 <textarea
                   name=""
                   id=""
+                  wrap="on"
                   ref={commentRef}
-                  rows={commentTextRows.current}
-                  className={
-                    codeAdd || codeValue ? "mt-2 haru-underline" : "mt-2"
-                  }
+                  rows={commentTextRows.current || 1}
+                  className={`mt-2 ${
+                    codeAdd || codeValue ? "haru-underline" : ""
+                  }`}
                   onChange={commentChange}
                   value={commentValue || ""}
                   placeholder="メモを入力してください"
                 />
-                {(codeAdd || codeValue) && (
-                  <textarea
-                    name=""
-                    id=""
-                    ref={codeRef}
-                    rows={codeTextRows.current}
-                    wrap="off"
-                    className="mt-2"
-                    onChange={codeChange}
-                    value={codeValue || ""}
-                    placeholder="コードを入力してください"
+                {/* {(codeAdd || codeValue || codeTextRows.current > 1) && ( */}
+                <textarea
+                  name=""
+                  id=""
+                  ref={codeRef}
+                  rows={codeTextRows.current || 1}
+                  wrap="off"
+                  className={`mt-2 ${
+                    codeAdd || codeValue ? "visible" : "invisible -m-10"
+                  }`}
+                  onChange={codeChange}
+                  value={codeValue || ""}
+                  placeholder="コードを入力してください"
+                />
+                {/* )} */}
+              </td>
+              <td>
+                <div className="w-11/12">
+                  <Swiper
+                    className="w-60 md:w-96"
+                    modules={[Navigation, Pagination]} // ✅ ここで modules を適切に設定
+                    spaceBetween={10}
+                    slidesPerView={2}
+                    // navigation
+                    pagination={{ clickable: true }}
+                    freeMode={true} // ✅ ドラッグで自由にスクロール
+                  >
+                    {imageList?.map((image) => {
+                      if (image.todo_id == idValue) {
+                        return (
+                          <SwiperSlide key={image.id}>
+                            {imageDeleteCheck != image.id && (
+                              <img
+                                src={image.todo_image_path}
+                                alt=""
+                                className={`w-32 max-h-64 ${imageDelete == image.id && "border-4 border-solid border-red-400"} `}
+                                key={image.id}
+                                onClick={() => {
+                                  setImageDeleteCheck(image.id)
+                                }}
+                              />
+                            )}
+                            {imageDeleteCheck == image.id && (
+                              <img
+                                src={image.todo_image_path}
+                                alt=""
+                                className="w-32 max-h-64 border-4 border-solid border-green-400"
+                                // {`mt-2 ${
+                                //   codeAdd || codeValue ? "visible" : "invisible -m-10"
+                                // }`}
+                                key={image.id}
+                                onClick={() => {
+                                  setImageDeleteCheck(-1);
+                                  setImageDelete(image.id);
+                                  deleteTodoImage(image.id).then(() => {
+                                    showTodoImage().then((res) => {
+                                      setImageList(res.todoImage);
+                                    });
+                                  })
+                                }}
+                              />
+                            )}
+                          </SwiperSlide>
+                        );
+                      }
+                    })}
+                  </Swiper>
+                </div>
+                <div className="flex justify-between">
+                  <input
+                    type="file"
+                    ref={imageFile}
+                    name="todo_image"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) =>
+                      addTodoImage(idValue, event.target.files[0]).then(
+                        () => {
+                          showTodoImage().then((res) => {
+                            console.log("res", res);
+                            setImageList(res.todoImage);
+                          });
+                        }
+                      )
+                    }
                   />
-                )}
+                  <button className="block ml-auto" onClick={() => {addImage(), setImageDelete(-1)}}>
+                    アップロード
+                  </button>
+                </div>
               </td>
               <td className="border-l-0">
                 <button
