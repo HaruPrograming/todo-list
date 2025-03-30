@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShowTodoContext } from '../context/showTodoContext';
 import { usegetTodoContext } from '../context/getTodoContext';
 import { useCookies } from 'react-cookie';
+import { useUserInfoContext } from '../context/userInfoContext';
 
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
@@ -99,13 +100,13 @@ export const TodoHooks = () => {
   };
 
   // showTodo
-  const showTodo = () => {
+  const showTodo = (uid) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/showTodo")
+        .get(`http://localhost:8000/api/showTodo/${uid}`)
         .then((res) => {
           console.log("showTodo成功:", res.data);
           return res.data;
@@ -122,13 +123,13 @@ export const TodoHooks = () => {
   };
 
   // showTodoGroup
-  const showTodoGroup = () => {
+  const showTodoGroup = (uid) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/showTodoGroup")
+        .get(`http://localhost:8000/api/showTodoGroup/${uid}`)
         .then((res) => {
           console.log("showTodoGroup成功:", res.data);
           return res.data;
@@ -145,13 +146,13 @@ export const TodoHooks = () => {
   };
 
   // showTodoImage
-  const showTodoImage = () => {
+  const showTodoImage = (uid) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/showTodoImage")
+        .get(`http://localhost:8000/api/showTodoImage/${uid}`)
         .then((res) => {
           console.log("showTodoImage成功:", res.data);
           return res.data;
@@ -208,7 +209,7 @@ export const TodoHooks = () => {
   };
 
   // addTodoGroup
-  const addTodoGroup = (groupTitle) => {
+  const addTodoGroup = (groupTitle, uid) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
@@ -217,6 +218,7 @@ export const TodoHooks = () => {
         const groupId = res;
         const groupData = {
           id: groupId,
+          user_id: uid,
           title: groupTitle,
         };
         const addGroupResponse = axios
@@ -246,16 +248,16 @@ export const TodoHooks = () => {
   };
 
   // addTodoImage
-  const addTodoImage = (todoId, imagePath) => {
+  const addTodoImage = (todoId, imagePath, uid) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
       const response = getTodoImagesLastId().then((res) => {
-        console.log("resres", res);
         const imageId = res;
         const imageData = new FormData();
         imageData.append("id", imageId);
+        imageData.append("user_id", uid);
         imageData.append("todo_id", todoId);
         imageData.append("todo_image", imagePath);
         // const imageData = {
@@ -287,11 +289,15 @@ export const TodoHooks = () => {
   };
 
   // deleteTodo
-  const deleteTodo = async (todoId) => {
+  const deleteTodo = async (todoId, todoImageIdList) => {
+    console.log("todoImageIdList", todoImageIdList);
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
+      todoImageIdList?.forEach((imageId) => {
+        deleteTodoImage(imageId);
+      });
       const response = await axios
         .post(
           "http://localhost:8000/api/deleteTodo",
@@ -321,11 +327,15 @@ export const TodoHooks = () => {
   };
 
   // deleteTodoGroup
-  const deleteTodoGroup = async (todoGroupId) => {
+  const deleteTodoGroup = async (todoGroupId, todoList, todoImageIdList) => {
     try {
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
+      todoList.forEach((todo) => {
+        console.log("todoImageIdList", todoImageIdList);
+        deleteTodo(todo.id, todoImageIdList);
+      });
       const response = await axios
         .post(
           "http://localhost:8000/api/deleteTodoGroup",
@@ -344,7 +354,7 @@ export const TodoHooks = () => {
       console.log("deleteTodoGroup成功:", response);
       return response;
     } catch (error) {
-      console.error("deleteTodoGroupエラー:", error);
+      console.error("deleteTodoGroupエラー:", error.response.data);
       if (error.status == 419) {
         setCookie("X-CSRF-TOKEN", "");
         getCookeisToken();
@@ -376,7 +386,7 @@ export const TodoHooks = () => {
       console.log("deleteTodoImage成功:", response);
       return response;
     } catch (error) {
-      console.error("deleteTodoImageエラー:", error);
+      console.error("deleteTodoImageエラー:", error.response.data);
       if (error.status == 419) {
         setCookie("X-CSRF-TOKEN", "");
         getCookeisToken();

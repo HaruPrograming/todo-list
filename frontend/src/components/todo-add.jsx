@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { TodoHooks } from "../hooks/todo-list-hooks";
 import { usetodoDataContext } from "../context/todoDataContext";
 import { useShowTodoContext } from "../context/showTodoContext";
@@ -10,6 +10,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 import { set } from "date-fns";
+import { useUserInfoContext } from "../context/userInfoContext";
 
 export const TodoAdd = ({ add }) => {
   const {
@@ -23,8 +24,10 @@ export const TodoAdd = ({ add }) => {
     deleteTodo,
     deleteTodoImage,
   } = TodoHooks();
-  const { groupList, setGroupList, imageList, setImageList } = usetodoDataContext();
+  const { groupList, setGroupList, imageList, setImageList } =
+    usetodoDataContext();
   const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
+  const { userInfo, setUserInfo } = useUserInfoContext();
   const [idValue, setIdValue] = useState("");
   const [titleValue, setTitleValue] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -37,6 +40,7 @@ export const TodoAdd = ({ add }) => {
   const [codeAdd, setCodeAdd] = useState(false);
   const [groupAdd, setGroupAdd] = useState(false);
   const [error, setError] = useState("");
+  const [todoImageList, setTodoImageList] = useState([]);
   const [imageDeleteCheck, setImageDeleteCheck] = useState(-1);
   const [imageDelete, setImageDelete] = useState(-1);
   const commentRef = useRef("");
@@ -52,7 +56,6 @@ export const TodoAdd = ({ add }) => {
   const imageFile = useRef(null);
   // const nowDateFormat = new Date(formatToDatetimeLocal(nowDate));
 
-  
   useEffect(() => {
     nowDateFormat.current = new Date(formatToDatetimeLocal(nowDate));
     setStartDate(formatToDatetimeLocal(nowDate));
@@ -67,18 +70,13 @@ export const TodoAdd = ({ add }) => {
     // showTodoImage().then((res) => {
     //   setImageList(res.todoImage);
     // });
-    if (imageList == "") {
-      showTodoImage().then((res) => {
-        setImageList(res.todoImage);
-      });
-    }
     if (add) {
       setIdValue(add.id);
       setTitleValue(add.title);
       setStartDate(add.start_date);
       setEndDate(add.end_date);
-      groupList.map((group) => {
-        if (group.todo_id == add.id) {
+      groupList?.map((group) => {
+        if (group.id == add.group_id) {
           setGroupSelected(group.id);
         }
       });
@@ -92,23 +90,29 @@ export const TodoAdd = ({ add }) => {
           add.comment
         ));
       add.code &&
-        (codeTextRows.current = textRows(
-          codeRef,
-          codeNewLine,
-          add.code
-        ));
+        (codeTextRows.current = textRows(codeRef, codeNewLine, add.code));
     }
   }, []);
-  
+
+  useEffect(() => {
+    imageList?.map((image) => {
+      if (image.todo_id == idValue) {
+        setTodoImageList((prev) => {
+          return [...prev, image.id];
+        });
+      }
+    });
+  }, [idValue, imageList]);
+
   const formatToDatetimeLocal = (date, addDate = 0, addHour = 0) => {
     const newDate = new Date(date);
     const year = newDate.getFullYear();
     const month = String(newDate.getMonth() + 1).padStart(2, "0");
     const day = String(newDate.getDate() + addDate).padStart(2, "0");
     const hours =
-    newDate.getHours() + addHour == "24"
-    ? "00"
-    : String(newDate.getHours() + addHour).padStart(2, "0");
+      newDate.getHours() + addHour == "24"
+        ? "00"
+        : String(newDate.getHours() + addHour).padStart(2, "0");
     const minutes = String(newDate.getMinutes()).padStart(2, "0");
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   };
@@ -119,7 +123,11 @@ export const TodoAdd = ({ add }) => {
 
   const commentChange = (event) => {
     setCommentValue(event.target.value);
-    commentTextRows.current = textRows(commentRef, commentNewLine, event.target.value);
+    commentTextRows.current = textRows(
+      commentRef,
+      commentNewLine,
+      event.target.value
+    );
   };
 
   const codeChange = (event) => {
@@ -138,8 +146,8 @@ export const TodoAdd = ({ add }) => {
     // );
     if (valueRef.current) {
       valueNewLine.current = value.match(/\r\n|\n/g)
-      ? value.match(/\r\n|\n/g).length
-      : 1;
+        ? value.match(/\r\n|\n/g).length
+        : 1;
       valueSliceRef.current = value;
       if (valueSliceRef.current.indexOf("\n") > -1) {
         while (valueSliceRef.current.indexOf("\n") > -1) {
@@ -161,7 +169,7 @@ export const TodoAdd = ({ add }) => {
       return 1;
     }
   };
-  
+
   const startDateChange = (event) => {
     const inputDate = new Date(event.target.value);
     if (nowDateFormat.current < inputDate) {
@@ -169,7 +177,7 @@ export const TodoAdd = ({ add }) => {
       endDateSet(inputDate, 1);
     }
   };
-  
+
   const endDateChange = (event) => {
     const inputDate = new Date(event.target.value);
     if (new Date(startDate) < inputDate && nowDateFormat.current < inputDate) {
@@ -203,6 +211,7 @@ export const TodoAdd = ({ add }) => {
     const selectedPriorityValue = priorityValue || "高";
     const selectedGroupSelected = groupSelected || null;
     const todoData = {
+      user_id: userInfo.uid,
       title: titleValue,
       start_date: startDate,
       end_date: endDate,
@@ -221,14 +230,14 @@ export const TodoAdd = ({ add }) => {
       //     setError(true);
       //   }
       // });
-      addTodoGroup(groupValue).then((res) => {
-          // console.log('res', res)
-          todoData.group_id = res;
-          saveSelect(todoData);
-        });
+      addTodoGroup(groupValue, userInfo.uid).then((res) => {
+        // console.log('res', res)
+        todoData.group_id = res;
+        saveSelect(todoData);
+      });
     } else {
       saveSelect(todoData).then((res) => {
-        if (res.status == 'error') {
+        if (res.status == "error") {
           setError(true);
         }
       });
@@ -245,7 +254,7 @@ export const TodoAdd = ({ add }) => {
 
   const addImage = () => {
     imageFile.current.click();
-  }
+  };
 
   return (
     <>
@@ -258,12 +267,14 @@ export const TodoAdd = ({ add }) => {
               <th>重要度</th>
               <th>グループ</th>
               <th>メモ</th>
-              <th>画像</th>
+              {add && <th>画像</th>}
               <th className="border-r-0">
                 {add && (
                   <button
                     className="haru-btn haru-delete-btn-color text-base font-normal text-black my-auto mr-0 ml-auto"
-                    onClick={() => deleteTodo(idValue)}
+                    onClick={() => {
+                      deleteTodo(idValue, todoImageList)
+                    }}
                   >
                     削除
                   </button>
@@ -391,81 +402,92 @@ export const TodoAdd = ({ add }) => {
                 />
                 {/* )} */}
               </td>
-              <td>
-                <div className="w-11/12">
-                  <Swiper
-                    className="w-60 md:w-96"
-                    modules={[Navigation, Pagination]} // ✅ ここで modules を適切に設定
-                    spaceBetween={10}
-                    slidesPerView={2}
-                    // navigation
-                    pagination={{ clickable: true }}
-                    freeMode={true} // ✅ ドラッグで自由にスクロール
-                  >
-                    {imageList?.map((image) => {
-                      if (image.todo_id == idValue) {
-                        return (
-                          <SwiperSlide key={image.id}>
-                            {imageDeleteCheck != image.id && (
-                              <img
-                                src={image.todo_image_path}
-                                alt=""
-                                className={`w-32 max-h-64 ${imageDelete == image.id && "border-4 border-solid border-red-400"} `}
-                                key={image.id}
-                                onClick={() => {
-                                  setImageDeleteCheck(image.id)
-                                }}
-                              />
-                            )}
-                            {imageDeleteCheck == image.id && (
-                              <img
-                                src={image.todo_image_path}
-                                alt=""
-                                className="w-32 max-h-64 border-4 border-solid border-green-400"
-                                // {`mt-2 ${
-                                //   codeAdd || codeValue ? "visible" : "invisible -m-10"
-                                // }`}
-                                key={image.id}
-                                onClick={() => {
-                                  setImageDeleteCheck(-1);
-                                  setImageDelete(image.id);
-                                  deleteTodoImage(image.id).then(() => {
-                                    showTodoImage().then((res) => {
-                                      setImageList(res.todoImage);
+              {add && (
+                <td>
+                  <div className="w-11/12">
+                    <Swiper
+                      className="w-60 md:w-96"
+                      modules={[Navigation, Pagination]} // ✅ ここで modules を適切に設定
+                      spaceBetween={10}
+                      slidesPerView={2}
+                      // navigation
+                      pagination={{ clickable: true }}
+                      freeMode={true} // ✅ ドラッグで自由にスクロール
+                    >
+                      {imageList?.map((image) => {
+                        if (image.todo_id == idValue) {
+                          return (
+                            <SwiperSlide key={image.id}>
+                              {imageDeleteCheck != image.id && (
+                                <img
+                                  src={image.todo_image_path}
+                                  alt=""
+                                  className={`w-32 max-h-64 ${
+                                    imageDelete == image.id &&
+                                    "border-4 border-solid border-red-400"
+                                  } `}
+                                  key={image.id}
+                                  onClick={() => {
+                                    setImageDeleteCheck(image.id);
+                                  }}
+                                />
+                              )}
+                              {imageDeleteCheck == image.id && (
+                                <img
+                                  src={image.todo_image_path}
+                                  alt=""
+                                  className="w-32 max-h-64 border-4 border-solid border-green-400"
+                                  // {`mt-2 ${
+                                  //   codeAdd || codeValue ? "visible" : "invisible -m-10"
+                                  // }`}
+                                  key={image.id}
+                                  onClick={() => {
+                                    setImageDeleteCheck(-1);
+                                    setImageDelete(image.id);
+                                    deleteTodoImage(image.id).then(() => {
+                                      showTodoImage(userInfo.uid).then((res) => {
+                                        setImageList(res.todoImage);
+                                      });
                                     });
-                                  })
-                                }}
-                              />
-                            )}
-                          </SwiperSlide>
-                        );
-                      }
-                    })}
-                  </Swiper>
-                </div>
-                <div className="flex justify-between">
-                  <input
-                    type="file"
-                    ref={imageFile}
-                    name="todo_image"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) =>
-                      addTodoImage(idValue, event.target.files[0]).then(
-                        () => {
-                          showTodoImage().then((res) => {
-                            console.log("res", res);
-                            setImageList(res.todoImage);
-                          });
+                                  }}
+                                />
+                              )}
+                            </SwiperSlide>
+                          );
                         }
-                      )
-                    }
-                  />
-                  <button className="block ml-auto" onClick={() => {addImage(), setImageDelete(-1)}}>
-                    アップロード
-                  </button>
-                </div>
-              </td>
+                      })}
+                    </Swiper>
+                  </div>
+                  <div className="flex justify-between">
+                    <input
+                      type="file"
+                      ref={imageFile}
+                      name="todo_image"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) =>
+                        addTodoImage(idValue, event.target.files[0], userInfo.uid).then(
+                          () => {
+                            showTodoImage(userInfo.uid).then((res) => {
+                              setImageList(res.todoImage);
+                            });
+                          }
+                        )
+                      }
+                    />
+                    {add && (
+                      <button
+                        className="haru-btn bg-orange-300 block ml-auto"
+                        onClick={() => {
+                          addImage(), setImageDelete(-1);
+                        }}
+                      >
+                        アップロード
+                      </button>
+                    )}
+                  </div>
+                </td>
+              )}
               <td className="border-l-0">
                 <button
                   className="haru-btn haru-save-btn-color my-auto mr-0 ml-auto"
@@ -491,4 +513,4 @@ export const TodoAdd = ({ add }) => {
       </div>
     </>
   );
-}
+};

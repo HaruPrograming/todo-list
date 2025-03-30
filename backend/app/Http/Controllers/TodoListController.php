@@ -69,7 +69,7 @@ class TodoListController extends Controller
   {
     try {
       $todoImagesLastRow = TodoImage::orderBy('id', 'desc')->first();
-      $lastId = $todoImagesLastRow ? $todoImagesLastRow->id : 0;
+      $imagesLastId = $todoImagesLastRow ? $todoImagesLastRow->id : 0;
       return response([
         'status' => 'success',
         'message' => 'imagesLastIdの取得に成功しました',
@@ -88,10 +88,10 @@ class TodoListController extends Controller
    * @throws  Exception | json(status, message), 500
    * @return  json(status, message, todoList), 200
    */
-  public function showTodo() 
+  public function showTodo($uid) 
   {
     try {
-      $todoList = TodoList::all();
+      $todoList = TodoList::where('user_id', $uid)->get();
       return response([
         'status' => 'success',
         'message' => 'todoListの取得に成功しました',
@@ -110,10 +110,10 @@ class TodoListController extends Controller
    * @throws  Exception | json(status, message), 500
    * @return  json(status, message, todoGroups), 200
    */
-  public function showTodoGroup() 
+  public function showTodoGroup($uid) 
   {
     try {
-      $todoGroups = TodoGroup::all();
+      $todoGroups = TodoGroup::where('user_id', $uid)->get();
       return response([
         'status' => 'success',
         'message' => 'todoGroupの取得に成功しました',
@@ -132,10 +132,10 @@ class TodoListController extends Controller
    * @throws  Exception | json(status, message), 500
    * @return  json(status, message, todoImages), 200
    */
-  public function showTodoImage() 
+  public function showTodoImage($uid) 
   {
     try {
-      $todoImages = TodoImage::all();
+      $todoImages = TodoImage::where('user_id', $uid)->get();
       $todoImageList = $todoImages->map(function($todoImage) {
         return [
           'id' => $todoImage->id,
@@ -174,6 +174,7 @@ class TodoListController extends Controller
     try {
       $todo = new TodoList();
       $todo->id = $request->id;
+      $todo->user_id = $request->user_id;
       $todo->group_id = $request->group_id;
       $todo->title = $request->title;
       $todo->start_date = $request->start_date;
@@ -209,6 +210,7 @@ class TodoListController extends Controller
     try {
       $todoGroup = new TodoGroup();
       $todoGroup->id = $request->id;
+      $todoGroup->user_id = $request->user_id;
       $todoGroup->title = $request->title;
       $todoGroup->save();
 
@@ -242,6 +244,7 @@ class TodoListController extends Controller
 
       $todoImage = new TodoImage();
       $todoImage->id = $request->id;
+      $todoImage->user_id = $request->user_id;
       $todoImage->todo_id = $request->todo_id;
       $todoImage->todo_image_path = $imagePath;
       $todoImage->save();
@@ -366,7 +369,7 @@ class TodoListController extends Controller
       $todo->start_date = $request->start_date;
       $todo->end_date = $request->end_date;
       $todo->priority = $request->priority;
-      // $todo->group_id = $request->group_id;
+      $todo->group_id = $request->group_id;
       $todo->comment = $request->comment;
       $todo->code = $request->code;
       $todo->save();

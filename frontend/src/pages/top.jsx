@@ -2,25 +2,42 @@ import "moment/locale/ja";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import moment from "moment";
 import React, { useState, useEffect } from "react";
-import { Calendar, momentLocalizer, dateFnsLocalizer, Views  } from "react-big-calendar";
+import {
+  Calendar,
+  momentLocalizer,
+  dateFnsLocalizer,
+  Views,
+} from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addMonths } from "date-fns";
+import { auth } from "../../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { ja } from "date-fns/locale";
 import { useShowTodoContext } from "../context/showTodoContext";
 import { usegetTodoContext } from "../context/getTodoContext";
 import { usetodoDataContext } from "../context/todoDataContext";
+import { useUserInfoContext } from "../context/userInfoContext";
 import { CustomToolbar } from "../components/custom-tool-bar";
 import { TodoListFormat } from "../components/todo-list-format";
 import { TodoFormat } from "../components/todo-format";
 import { TodoAdd } from "../components/todo-add";
 import { TodoHooks } from "../hooks/todo-list-hooks";
 import { FilteringTodoList } from "../components/filtering-todo-list";
+import { useNavigate } from "react-router-dom";
+import { Loading } from "../components/loading";
 
 export const Top = () => {
   const { showTodo, showTodoGroup } = TodoHooks();
   const { todoAddCheck, setTodoAddCheck } = useShowTodoContext();
   const { getTodoCheck, getTodoGroupCheck } = usegetTodoContext();
-  const { dbTodoList, setDbTodoList, dbSouceTodoList, setSouceDbTodoList, groupList, setGroupList } =
-    usetodoDataContext();
+  const { userInfo, setUserInfo } = useUserInfoContext();
+  const {
+    dbTodoList,
+    setDbTodoList,
+    dbSouceTodoList,
+    setSouceDbTodoList,
+    groupList,
+    setGroupList,
+  } = usetodoDataContext();
   const [todoAddValue, setTodoAddValue] = useState("追加");
   const [filteringValue, setFilteringValue] = useState("絞り込み");
   const [currentDate, setCurrentDate] = useState("");
@@ -31,8 +48,8 @@ export const Top = () => {
   const [filteringDescCheck, setFilteringDescCheck] = useState(false);
   const [filterEndShowCheck, setFilterEndShowCheck] = useState(false);
   const [filterGroupCheck, setFilterGroupCheck] = useState(false);
+  const navigate = useNavigate();
   const dateFormat = "yyyy-MM-dd";
-
   const locales = { ja };
   const localizer = dateFnsLocalizer({
     format,
@@ -45,11 +62,25 @@ export const Top = () => {
   useEffect(() => {
     const date = formatDate(new Date());
     setCurrentDate(date);
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserInfo(user);
+      } else {
+        setUserInfo(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     setTodoAddValue(!todoAddCheck ? "追加" : "閉じる");
-    showTodo().then((res) => {
+    if (userInfo) {
+      showTodo(userInfo.uid).then((res) => {
+        if (res.todoList == "") {
+          setDbTodoList(null);
+        }
         if (filteringAscCheck) {
           setDbTodoList(
             res.todoList.sort(
@@ -74,17 +105,20 @@ export const Top = () => {
             )
           );
         }
-      // setDbTodoList(res.todoList);
-      // setSouceDbTodoList(res.todoList);
-    });
+        // setDbTodoList(res.todoList);
+        // setSouceDbTodoList(res.todoList);
+      });
+    }
     setSouceDbTodoList(dbTodoList);
-  }, [getTodoCheck]);
+  }, [getTodoCheck, userInfo]);
 
   useEffect(() => {
-    showTodoGroup().then((res) => {
-      setGroupList(res.todoGroup);
-    });
-  }, [getTodoGroupCheck]);
+    if (userInfo) {
+      showTodoGroup(userInfo.uid).then((res) => {
+        setGroupList(res.todoGroup != "" ? res.todoGroup : null);
+      });
+    }
+  }, [getTodoGroupCheck, userInfo]);
 
   useEffect(() => {
     setEvent([]);
@@ -148,12 +182,11 @@ export const Top = () => {
       };
     }
 
-
     return {};
   };
 
   const handleNavigate = (date) => {
-    console.log("ナビゲートされた日付: ", date.toDateString());
+    // console.log("ナビゲートされた日付: ", date.toDateString());
     setCurrentDate(formatDate(date));
   };
 
@@ -173,11 +206,7 @@ export const Top = () => {
     if (currentView === Views.MONTH) {
       return <div></div>;
     }
-    return (
-      <div>
-        {event.title}
-      </div>
-    );
+    return <div>{event.title}</div>;
   };
 
   // useEffect(() => {
@@ -201,9 +230,7 @@ export const Top = () => {
     setFilteringAscCheck(true);
     setFilteringDescCheck(false);
     setDbTodoList(
-      dbTodoList.sort(
-        (a, b) => new Date(a.start_date) - new Date(b.start_date)
-      )
+      dbTodoList.sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
     );
   };
 
@@ -211,12 +238,10 @@ export const Top = () => {
     setFilteringAscCheck(false);
     setFilteringDescCheck(true);
     setDbTodoList(
-      dbTodoList.sort(
-        (a, b) => new Date(b.start_date) - new Date(a.start_date)
-      )
+      dbTodoList.sort((a, b) => new Date(b.start_date) - new Date(a.start_date))
     );
   };
-  
+
   const filterEndTodoShow = (event) => {
     const checked = event.target.checked;
     if (checked == true) {
@@ -224,27 +249,43 @@ export const Top = () => {
       setDbTodoList([]);
       dbSouceTodoList?.map((todo) => {
         if (todo.check != 2) {
-          setDbTodoList((prev) => [...prev, todo])
+          setDbTodoList((prev) => [...prev, todo]);
         }
-      })
+      });
     } else if (checked == false) {
       setFilterEndShowCheck(false);
       setDbTodoList(dbSouceTodoList);
     }
-  }
+  };
 
   const filterGroupShow = (event) => {
     const checked = event.target.checked;
-    console.log(filterGroupCheck)
     if (checked == true) {
       setFilterGroupCheck(true);
     } else if (checked == false) {
       setFilterGroupCheck(false);
     }
+  };
+
+  const logout = () => {
+    auth.signOut().then(() => {
+      setUserInfo(null);
+      navigate("/");
+    });
+
   }
 
   return (
     <>
+      <Loading />
+      <div className="flex justify-end">
+        {userInfo && (
+          <h1 className="flex items-center mr-2">{userInfo.displayName}</h1>
+        )}
+        <button className="haru-btn bg-red-300" onClick={logout}>
+          ログアウト
+        </button>
+      </div>
       <div className="h-screen">
         <div className="h-1/2">
           <Calendar
@@ -342,7 +383,7 @@ export const Top = () => {
               </button>
             </div>
           </div>
-          {dbTodoList == "" && !todoAddCheck && (
+          {userInfo && dbTodoList == null && !todoAddCheck && (
             <h1 className="text-center font-semibold">
               Todoリストがありません。
             </h1>
@@ -360,23 +401,21 @@ export const Top = () => {
             filteringCheck={filteringCheck}
             showfFltering={showfFltering}
           />
-          {groupList && !filterGroupCheck &&
+          {groupList &&
+            !filterGroupCheck &&
             groupList?.map((group) => (
               <TodoListFormat key={group.id} group={group} />
             ))}
-          {groupList?.map((group) => (
-            dbTodoList?.map((todo, todoIndex) => {
-              if (group.id == todo.group_id) return;
-              console.log(todoIndex, dbTodoList.length - 1);
-              return todoIndex == dbTodoList.length -1 && <TodoFormat key={todo.id} todo={todo} />;
-            })
-          ))}
-          {groupList == "" && 
+          {groupList?.map((group) =>
             dbTodoList?.map((todo) => {
-              return  <TodoFormat key={todo.id} todo={todo} />;
-          })}
-          {/* <TodoListFormat />
-          <TodoFormat /> */}
+              if (group.id == todo.group_id) return;
+              return <TodoFormat key={todo.id} todo={todo} />;
+            })
+          )}
+          {groupList == null &&
+            dbTodoList?.map((todo) => {
+              return <TodoFormat key={todo.id} todo={todo} />;
+            })}
         </div>
       </div>
     </>

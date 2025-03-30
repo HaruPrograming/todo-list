@@ -3,13 +3,28 @@ import { usetodoDataContext } from "../context/todoDataContext";
 import { useShowTodoContext } from "../context/showTodoContext";
 import { TodoFormat } from "./todo-format";
 import { TodoHooks } from "../hooks/todo-list-hooks";
+import { useUserInfoContext } from "../context/userInfoContext";
 
 export const TodoListFormat = ({ group }) => {
-  const { dbTodoList } = usetodoDataContext();
-  const { deleteTodoGroup } = TodoHooks();
+    const {
+      showTodoImage,
+      deleteTodoGroup,
+    } = TodoHooks();
+  const { dbTodoList, imageList, setImageList } = usetodoDataContext();
   const { todoListInfoCheck, setTodoListInfoCheck, setTodoInfoCheck } = useShowTodoContext();
+  const { userInfo, setUserInfo } = useUserInfoContext();
   const [todoListInfoAllow, setTodoListInfoAllow] = useState(false);
   const [todoListExistCheck, setTodoListExistCheck] = useState(false);
+  const [todoList, setTodoList] = useState([]);
+  const [todoImageList, setTodoImageList] = useState([]);
+
+  useEffect(() => {
+    if (userInfo) {
+      showTodoImage(userInfo.uid).then((res) => {
+        setImageList(res.todoImage);
+      });
+    }
+  }, [userInfo]);
 
   useEffect(() => {
     if (todoListInfoCheck != group.id) {
@@ -18,6 +33,21 @@ export const TodoListFormat = ({ group }) => {
       setTodoListInfoAllow(true);
     }
   }, [todoListInfoCheck]);
+
+  useEffect(() => {
+    setTodoList([]);
+    {todoListInfoCheck == group.id &&
+      dbTodoList?.map(
+        (todo) =>{
+          group.id == todo.group_id && !todoListExistCheck && setTodoList((prev) => [...prev, todo])
+          imageList?.map((image) => {
+            if (image.todo_id == todo.id) {
+              setTodoImageList((prev) => [...prev, image.id]);
+            }
+          })}
+        );
+    }
+  }, [todoListInfoCheck, dbTodoList, imageList]);
 
   const showTodoListInfo = () => {
     if (todoListInfoCheck != group.id) {
@@ -43,7 +73,7 @@ export const TodoListFormat = ({ group }) => {
             {todoListInfoCheck == group.id && !todoListExistCheck && (
               <button
                 className="haru-btn py-0 haru-delete-btn-color m-0 ml-2 text-base font-normal text-black"
-                onClick={() => deleteTodoGroup(group.id)}
+                onClick={() => deleteTodoGroup(group.id, todoList, todoImageList)}
               >
                 削除
               </button>
@@ -57,11 +87,14 @@ export const TodoListFormat = ({ group }) => {
         />
       </div>
       {todoListInfoCheck == group.id &&
-        dbTodoList.map(
+        todoList.map(
           (todo) =>
-            group.id == todo.group_id &&
-            (!todoListExistCheck && setTodoListExistCheck(true),
-            (<TodoFormat key={todo.id} todo={todo} />))
+            // group.id == todo.group_id && !todoListExistCheck && 
+              <TodoFormat
+                key={todo.id}
+                todo={todo}
+              />
+            
         )}
     </div>
   );
