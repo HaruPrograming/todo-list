@@ -437,6 +437,7 @@ export const TodoHooks = () => {
         })
         .then((res) => {
           setGetTodoCheck(!getTodoCheck);
+          console.log(todoCheckData, !getTodoCheck)
           return res.data;
         });
       console.log("editTodoCheckBox成功:", response);

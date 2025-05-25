@@ -6,5 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class User extends Model
 {
-    protected $table = 'haru_database.users';
+    protected $table = 'haru_db.users';
+    // protected $table = 'haru_database.users';
 }
