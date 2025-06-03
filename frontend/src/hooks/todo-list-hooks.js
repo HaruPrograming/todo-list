@@ -5,7 +5,6 @@ import { usegetTodoContext } from "../context/getTodoContext";
 import { useCookies } from "react-cookie";
 import { useUserInfoContext } from "../context/userInfoContext";
 
-const InterNetUrl = "http://52.199.162.111:8000";
 
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
@@ -16,6 +15,7 @@ export const TodoHooks = () => {
     setGetTodoGroupCheck,
   } = usegetTodoContext();
   const [cookies, setCookie, removeCookie] = useCookies([""]);
+  const InterNetUrl = "http://52.199.162.111:8000";
   // const todoLength = useRef(0);
   // const [todoLength, setTodolength] = useState(0);
 
