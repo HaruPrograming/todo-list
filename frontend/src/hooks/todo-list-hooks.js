@@ -1,9 +1,11 @@
-import axios from 'axios'; 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useShowTodoContext } from '../context/showTodoContext';
-import { usegetTodoContext } from '../context/getTodoContext';
-import { useCookies } from 'react-cookie';
-import { useUserInfoContext } from '../context/userInfoContext';
+import axios from "axios";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useShowTodoContext } from "../context/showTodoContext";
+import { usegetTodoContext } from "../context/getTodoContext";
+import { useCookies } from "react-cookie";
+import { useUserInfoContext } from "../context/userInfoContext";
+
+const InterNetUrl = "http://52.199.162.111:8000";
 
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
@@ -20,7 +22,7 @@ export const TodoHooks = () => {
   // getCookeisToken
   const getCookeisToken = () => {
     axios
-      .get("http://localhost:8000/csrf-token", { withCredentials: true })
+      .get(`${InterNetUrl}/csrf-token`, { withCredentials: true })
       .then((response) => {
         setCookie("X-CSRF-TOKEN", response.data.csrf_token);
         console.log("X-CSRF-TOKEN", response.data);
@@ -37,7 +39,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/getTodosLastId")
+        .get(`${InterNetUrl}/api/getTodosLastId`)
         .then((res) => {
           console.log("getTodosLastId成功:", res.data);
           return res.data.todosLastId + 1;
@@ -60,7 +62,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/getTodoGroupsLastId")
+        .get(`${InterNetUrl}/api/getTodoGroupsLastId`)
         .then((res) => {
           console.log("getTodoGroupsLastId成功:", res.data);
           return res.data.groupsLastId + 1;
@@ -83,7 +85,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get("http://localhost:8000/api/getTodoImagesLastId")
+        .get(`${InterNetUrl}/api/getTodoImagesLastId`)
         .then((res) => {
           console.log("getTodoImagesLastId成功:", res.data);
           return res.data.imagesLastId + 1;
@@ -106,7 +108,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get(`http://localhost:8000/api/showTodo/${uid}`)
+        .get(`${InterNetUrl}/api/showTodo/${uid}`)
         .then((res) => {
           console.log("showTodo成功:", res.data);
           return res.data;
@@ -129,7 +131,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get(`http://localhost:8000/api/showTodoGroup/${uid}`)
+        .get(`${InterNetUrl}/api/showTodoGroup/${uid}`)
         .then((res) => {
           console.log("showTodoGroup成功:", res.data);
           return res.data;
@@ -152,7 +154,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = axios
-        .get(`http://localhost:8000/api/showTodoImage/${uid}`)
+        .get(`${InterNetUrl}/api/showTodoImage/${uid}`)
         .then((res) => {
           console.log("showTodoImage成功:", res.data);
           return res.data;
@@ -183,7 +185,7 @@ export const TodoHooks = () => {
       const response = getTodosLastId().then((res) => {
         todoData.id = res;
         const addResponse = axios
-          .post("http://localhost:8000/api/addTodo", todoData, {
+          .post(`${InterNetUrl}/api/addTodo`, todoData, {
             headers: {
               "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
             },
@@ -222,7 +224,7 @@ export const TodoHooks = () => {
           title: groupTitle,
         };
         const addGroupResponse = axios
-          .post("http://localhost:8000/api/addTodoGroup", groupData, {
+          .post(`${InterNetUrl}/api/addTodoGroup`, groupData, {
             headers: {
               "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
             },
@@ -265,7 +267,7 @@ export const TodoHooks = () => {
         //   todo_image: imagePath,
         // };
         const addImageResponse = axios
-          .post("http://localhost:8000/api/addTodoImage", imageData, {
+          .post(`${InterNetUrl}/api/addTodoImage`, imageData, {
             headers: {
               "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
             },
@@ -300,7 +302,7 @@ export const TodoHooks = () => {
       });
       const response = await axios
         .post(
-          "http://localhost:8000/api/deleteTodo",
+          `${InterNetUrl}/api/deleteTodo`,
           { id: todoId },
           {
             headers: {
@@ -338,7 +340,7 @@ export const TodoHooks = () => {
       });
       const response = await axios
         .post(
-          "http://localhost:8000/api/deleteTodoGroup",
+          `${InterNetUrl}/api/deleteTodoGroup`,
           { id: todoGroupId },
           {
             headers: {
@@ -371,7 +373,7 @@ export const TodoHooks = () => {
       }
       const response = await axios
         .post(
-          "http://localhost:8000/api/deleteTodoImage",
+          `${InterNetUrl}/api/deleteTodoImage`,
           { id: todoImageId },
           {
             headers: {
@@ -402,7 +404,7 @@ export const TodoHooks = () => {
         getCookeisToken();
       }
       const response = await axios
-        .post("http://localhost:8000/api/editTodo", todoData, {
+        .post(`${InterNetUrl}/api/editTodo`, todoData, {
           headers: {
             "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
@@ -429,7 +431,7 @@ export const TodoHooks = () => {
   const editTodoCheckBox = async (todoCheckData) => {
     try {
       const response = await axios
-        .post("http://localhost:8000/api/editTodoCheckBox", todoCheckData, {
+        .post(`${InterNetUrl}/api/editTodoCheckBox`, todoCheckData, {
           headers: {
             "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
@@ -437,7 +439,7 @@ export const TodoHooks = () => {
         })
         .then((res) => {
           setGetTodoCheck(!getTodoCheck);
-          console.log(todoCheckData, !getTodoCheck)
+          console.log(todoCheckData, !getTodoCheck);
           return res.data;
         });
       console.log("editTodoCheckBox成功:", response);
@@ -456,7 +458,7 @@ export const TodoHooks = () => {
   const editTodoImage = async (todoImageData) => {
     try {
       const response = await axios
-        .post("http://localhost:8000/api/editTodoImage", todoImageData, {
+        .post(`${InterNetUrl}/api/editTodoImage`, todoImageData, {
           headers: {
             "X-CSRF-TOKEN": cookies["X-CSRF-TOKEN"],
           },
