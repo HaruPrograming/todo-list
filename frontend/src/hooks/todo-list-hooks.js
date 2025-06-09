@@ -1,9 +1,10 @@
-import axios from 'axios'; 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useShowTodoContext } from '../context/showTodoContext';
-import { usegetTodoContext } from '../context/getTodoContext';
-import { useCookies } from 'react-cookie';
-import { useUserInfoContext } from '../context/userInfoContext';
+import axios from "axios";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useShowTodoContext } from "../context/showTodoContext";
+import { usegetTodoContext } from "../context/getTodoContext";
+import { useCookies } from "react-cookie";
+import { useUserInfoContext } from "../context/userInfoContext";
+
 
 const InterNetUrl = "http://52.199.162.111:8000"
 
@@ -16,13 +17,14 @@ export const TodoHooks = () => {
     setGetTodoGroupCheck,
   } = usegetTodoContext();
   const [cookies, setCookie, removeCookie] = useCookies([""]);
+  const InterNetUrl = "http://52.199.162.111:8000";
   // const todoLength = useRef(0);
   // const [todoLength, setTodolength] = useState(0);
 
   // getCookeisToken
   const getCookeisToken = () => {
     axios
-      .get(`${InterNetUrl}csrf-token`, { withCredentials: true })
+      .get(`${InterNetUrl}/csrf-token`, { withCredentials: true })
       .then((response) => {
         setCookie("X-CSRF-TOKEN", response.data.csrf_token);
         console.log("X-CSRF-TOKEN", response.data);
@@ -440,7 +442,7 @@ export const TodoHooks = () => {
         })
         .then((res) => {
           setGetTodoCheck(!getTodoCheck);
-          console.log(todoCheckData, !getTodoCheck)
+          console.log(todoCheckData, !getTodoCheck);
           return res.data;
         });
       console.log("editTodoCheckBox成功:", response);
