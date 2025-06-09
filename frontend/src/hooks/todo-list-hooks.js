@@ -6,6 +6,8 @@ import { useCookies } from "react-cookie";
 import { useUserInfoContext } from "../context/userInfoContext";
 
 
+const InterNetUrl = "http://52.199.162.111:8000"
+
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
   const {
@@ -104,6 +106,7 @@ export const TodoHooks = () => {
   // showTodo
   const showTodo = (uid) => {
     try {
+      console.log(cookies["X-CSRF-TOKEN"])
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
