@@ -5,9 +5,6 @@ import { usegetTodoContext } from "../context/getTodoContext";
 import { useCookies } from "react-cookie";
 import { useUserInfoContext } from "../context/userInfoContext";
 
-
-// const InterNetUrl = "http://52.199.162.111:8000"
-
 export const TodoHooks = () => {
   const { setTodoAddCheck, setTodoInfoCheck } = useShowTodoContext();
   const {
@@ -24,7 +21,9 @@ export const TodoHooks = () => {
   // getCookeisToken
   const getCookeisToken = () => {
     axios
-      .get(`${InterNetUrl}/csrf-token`, { withCredentials: true })
+      .get(`${InterNetUrl}/sanctum/csrf-cookie`, {
+        withCredentials: true,
+      })
       .then((response) => {
         setCookie("X-CSRF-TOKEN", response.data.csrf_token);
         console.log("X-CSRF-TOKEN", response.data);
