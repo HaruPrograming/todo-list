@@ -105,6 +105,7 @@ export const TodoHooks = () => {
   // showTodo
   const showTodo = (uid) => {
     try {
+      console.log(cookies["X-CSRF-TOKEN"])
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
