@@ -26,7 +26,7 @@ class TodoListController extends Controller
         'status' => 'success',
         'message' => 'todosLastIdの取得に成功しました',
         'todosLastId' => $todosLastId
-      ], 200);
+      ], 200);git 
     } catch(error) {
       return response()->json([
         'status' => 'error',
