@@ -14,16 +14,19 @@ export const TodoHooks = () => {
     setGetTodoGroupCheck,
   } = usegetTodoContext();
   const [cookies, setCookie, removeCookie] = useCookies([""]);
-  const InterNetUrl = "http://52.199.162.111:8000";
+  const InterNetUrl = "http://13.231.216.92:8000";
   // const todoLength = useRef(0);
   // const [todoLength, setTodolength] = useState(0);
 
   // getCookeisToken
   const getCookeisToken = () => {
-    axios
-      .get(`${InterNetUrl}/sanctum/csrf-cookie`, {
-        withCredentials: true,
-      })
+    // axios
+    //   .get(`${InterNetUrl}/sanctum/csrf-cookie`, {
+    //     withCredentials: true,
+    //   })
+    fetch(`${InterNetUrl}/sanctum/csrf-cookie`, {
+      credentials: "include", // cookieを送るために必要
+    })
       .then((response) => {
         setCookie("X-CSRF-TOKEN", response.data.csrf_token);
         console.log("X-CSRF-TOKEN", response.data);
@@ -105,6 +108,7 @@ export const TodoHooks = () => {
   // showTodo
   const showTodo = (uid) => {
     try {
+      console.log(cookies["X-CSRF-TOKEN"]);
       if (!cookies["X-CSRF-TOKEN"]) {
         getCookeisToken();
       }
